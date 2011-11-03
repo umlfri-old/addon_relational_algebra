@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Paths xmlns="http://umlfri.kst.fri.uniza.sk/xmlschema/metamodel.xsd">
+    <!-- Arrows -->
+
+     <Path id="simple_arrow" path="M -0.5,-1 L 0,0 L 0.5,-1" />
+    <!-- Corners -->
+    <Path id="rounded_corner" path="M 0,1 C 0,0.446 0.446,0 1,0" />
+</Paths>

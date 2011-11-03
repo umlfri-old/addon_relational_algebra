@@ -1,0 +1,8 @@
+<Domain xmlns="http://umlfri.kst.fri.uniza.sk/xmlschema/metamodel.xsd" id="dra_diagram">
+    <Attribute id="name" name="Name" >
+		<Str/>
+	</Attribute>
+    <Attribute id="note" name="Note" >
+		<Text/>
+	</Attribute>
+</Domain>
