@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ElementType id="Package" xmlns="http://umlfri.kst.fri.uniza.sk/xmlschema/metamodel.xsd">
+    <Icon path="icons/package.png" />
+    <Domain id="package" identity="name" />
+    <Connections />
+    <Appearance>
+        <Shadow padding="3" color="#cfg.Styles.Element.ShadowColor">
+            <HBox expand="-1">
+                <VBox>
+                    <Rectangle fill="#cfg.Styles.Element.FillColor" border="#cfg.Styles.Element.LineColor">
+                        <Padding padding="5">
+                            <HBox>
+                                <Condition condition="#self.stereotype">
+                                    <Align align="center">
+                                        <VBox>
+                                            <TextBox text="&#171;" font="#cfg.Styles.Element.TextFont" color="#cfg.Styles.Element.TextColor"/>
+                                            <TextBox text="#self.stereotype" font="#cfg.Styles.Element.TextFont" color="#cfg.Styles.Element.TextColor"/>
+                                            <TextBox text="&#187;" font="#cfg.Styles.Element.TextFont" color="#cfg.Styles.Element.TextColor"/>
+                                        </VBox>
+                                    </Align>
+                                </Condition>
+                                <Align align="center">
+                                    <TextBox text="#self.name" font="#cfg.Styles.Element.NameTextFont" color="#cfg.Styles.Element.NameTextColor"/>
+                                </Align>
+                            </HBox>
+                        </Padding>
+                    </Rectangle>
+                    <Padding padding="8"/>
+                </VBox>
+                <Rectangle fill="#cfg.Styles.Element.FillColor" border="#cfg.Styles.Element.LineColor">
+                    <Sizer minwidth="60" minheight="60">
+                        <Padding padding="5">
+                            <HBox>
+                                <Loop collection="#self._Children">
+                                    <VBox>
+                                        <Icon filename="#_Icon"/>
+                                        <Align align="left center">
+                                            <TextBox text="#name" font="#cfg.Styles.Element.NameTextFont" color="#cfg.Styles.Element.NameTextColor"/>
+                                        </Align>
+                                    </VBox>
+                                </Loop>
+                            </HBox>
+                        </Padding>
+                    </Sizer>
+                </Rectangle>
+            </HBox>
+        </Shadow>
+    </Appearance>
+    <Options>
+        <DirectAdd>true</DirectAdd>
+        <Layer>-2</Layer>
+    </Options>
+</ElementType>

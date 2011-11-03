@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DiagramType id="DRA diagram" xmlns="http://umlfri.kst.fri.uniza.sk/xmlschema/metamodel.xsd">
+    <Icon path="icons/DRA.png" />
+    <Domain id="dra_diagram" identity="name" />
+    <Special swimlines="0" lifelines="0" />
+    <Elements>
+        <Item value="Table" />
+        
+    </Elements>
+    <Connections>
+        <Item value="Relationship" />
+    </Connections>
+</DiagramType>
