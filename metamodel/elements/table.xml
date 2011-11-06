@@ -6,7 +6,7 @@
         <Item value="Relationship" allowrecursive="1"/>
     </Connections>
     <Appearance>
-<HBox>
+    <HBox>
         <Padding top="10">
     <Align align="center center">
             <Svg width="40" height="60">

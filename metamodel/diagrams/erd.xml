@@ -5,7 +5,10 @@
     <Special swimlines="0" lifelines="0" />
     <Elements>
         <Item value="Table" />
-        
+        <Item value="Union" />
+        <Item value="Intersection" />
+        <Item value="Product" />
+         <Item value="Difference" />
     </Elements>
     <Connections>
         <Item value="Relationship" />

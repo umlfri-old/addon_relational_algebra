@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ElementType id="Product" xmlns="http://umlfri.kst.fri.uniza.sk/xmlschema/metamodel.xsd">
+    <Icon path="icons/product.png" />
+    <Domain id="union" identity="name" />
+    <Connections>
+        <Item value="Relationship" allowrecursive="1"/>
+    </Connections>
+    <Appearance>
+        <Sizer minheight="40" minwidth="60">
+            <Ellipse border="black" fill="red">
+                <Align align="center center">
+                 <TextBox text="x" font="Arial 17"></TextBox>
+                </Align>
+            </Ellipse>
+        </Sizer>
+    </Appearance>
+</ElementType>
