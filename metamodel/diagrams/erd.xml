@@ -8,7 +8,11 @@
         <Item value="Union" />
         <Item value="Intersection" />
         <Item value="Product" />
-         <Item value="Difference" />
+        <Item value="Difference" />
+        <Item value="Division" />
+        <Item value="Selection" />
+        <Item value="Projection" />
+        <Item value="Join" />
     </Elements>
     <Connections>
         <Item value="Relationship" />
