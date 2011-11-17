@@ -12,7 +12,10 @@
         <Item value="Division" />
         <Item value="Selection" />
         <Item value="Projection" />
-        <Item value="Join" />
+        <Item value="Inner join" />
+        <Item value="Left outter join" />
+        <Item value="Right outter join" />
+        <Item value="Full outter join" />
     </Elements>
     <Connections>
         <Item value="Relationship" />
