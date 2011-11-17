@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ElementType id="Right outter join" xmlns="http://umlfri.kst.fri.uniza.sk/xmlschema/metamodel.xsd">
+    <Icon path="icons/right_join.png" />
+    <Domain id="right_join" identity="name" />
+    <Connections>
+        <Item value="Relationship" allowrecursive="1"/>
+    </Connections>
+    <Appearance>
+        <Sizer minheight="40" minwidth="60">
+            <Ellipse border="black" fill="green">
+                <Align align="center center">
+                    <Svg width="20" height="20">
+                <path d="M 0,2 L 0,17 L 20,3 M 20,2 L 20,18 M 20,17 L -1,1 M 20,3 L 27,3 M 20,17 L 27,17" style="fill:none;stroke:#000000;stroke-width:2;stroke-miterlimit:4;stroke-dashoffset:0;stroke-opacity:1" />
+            </Svg>
+                </Align>
+            </Ellipse>
+        </Sizer>
+    </Appearance>
+</ElementType>

@@ -1,0 +1,6 @@
+<Domain id="outter_full" xmlns="http://umlfri.kst.fri.uniza.sk/xmlschema/metamodel.xsd" >
+    <Attribute id="name" name="Name" >
+		<Str/>
+	</Attribute>
+
+</Domain>
