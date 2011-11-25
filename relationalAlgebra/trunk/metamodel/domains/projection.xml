@@ -2,4 +2,8 @@
     <Attribute id="name" name="Name" >
 		<Str/>
 	</Attribute>
+     <Attribute id="condition" name="Condition" >
+		    <Str/>
+	    </Attribute>
+    <Parse regexp=""></Parse>
 </Domain>

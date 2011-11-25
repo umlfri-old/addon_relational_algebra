@@ -9,7 +9,12 @@
         <Sizer minheight="40" minwidth="60">
             <Ellipse border="black" fill="green">
                 <Align align="center center">
-                    <TextBox text="σ" font="Arial 20"></TextBox>
+                    <VBox>
+                        <TextBox text="σ" font="Arial 20"></TextBox>
+                        <Padding top="13">
+                            <TextBox text="#self.condition" font="Arial 10"></TextBox>
+                        </Padding>
+                    </VBox>
                 </Align>
             </Ellipse>
         </Sizer>
