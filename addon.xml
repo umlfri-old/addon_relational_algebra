@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <AddOn xmlns="http://umlfri.org/xmlschema/addon.xsd">
     <Identity uri="urn:umlfri.org:metamodel:DRAmodel" />
-    
+
     <FriendlyName name="DRAmodel" version="0.0.1" />
     <Author>
         <Name name="Michal Belas" />
@@ -14,10 +14,11 @@
     <Description>
         Diagram of relation algebra (DRA) is an abstract and conceptual representation of data.
     </Description>
-    
     <Metamodel>
+
         <Path path="metamodel" />
-        
+
         <Template path="templates/empty.fritx" name="Empty DRA model" />
     </Metamodel>
+
 </AddOn>
