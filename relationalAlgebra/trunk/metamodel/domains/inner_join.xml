@@ -2,10 +2,21 @@
     <Attribute id="name" name="Name" >
         <Str />
 	</Attribute>
-
-    <Attribute id="condition" name="Condition" >
-		    <Str/>
-	    </Attribute>
-
+    <Attribute id="column1" name="Column 1">
+        <Str/>
+    </Attribute>
+   <Attribute id="condition" name="Condition">
+       <Enum default=" ">
+           <Value> </Value>
+           <Value>&gt; </Value>
+           <Value>&lt;</Value>
+           <Value>=</Value>
+           <Value>&gt;=</Value>
+           <Value>&lt;=</Value>
+       </Enum>
+   </Attribute>
+<Attribute id="column2" name="Column 2">
+    <Str/>
+</Attribute>
 
 </Domain>

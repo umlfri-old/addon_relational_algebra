@@ -11,8 +11,17 @@
                 <Align align="center center">
                     <VBox>
                         <TextBox text="π" font="Arial 20"></TextBox>
-                        <Padding top="13">
-                            <TextBox text="#self.condition" font="Arial 10"></TextBox>
+                        <Padding top="10">
+                            <VBox>
+                            <Loop collection="#self.c">
+                                <VBox>
+                                <Condition condition="#_line > 0">
+                                 <TextBox text=", "></TextBox>
+                            </Condition>
+                            <TextBox text="#meno"></TextBox>
+                                </VBox>
+                        </Loop>
+                            </VBox>
                         </Padding>
                     </VBox>
                 </Align>
