@@ -14,11 +14,17 @@
     <Description>
         Diagram of relation algebra (DRA) is an abstract and conceptual representation of data.
     </Description>
-    <Metamodel>
-
-        <Path path="metamodel" />
-
-        <Template path="templates/empty.fritx" name="Empty DRA model" />
-    </Metamodel>
+    <Dependencies>
+           <AddOn uri="urn:umlfri.org:starters:python" />
+       </Dependencies>
+    <Composite>
+        <Metamodel>
+            <Path path="metamodel" />
+            <Template path="templates/empty.fritx" name="Empty DRA Diagram" />
+        </Metamodel>
+        <Plugin>
+            <Code os="all" language="pythonNew" path="plugin" />
+        </Plugin>
+    </Composite>
 
 </AddOn>
