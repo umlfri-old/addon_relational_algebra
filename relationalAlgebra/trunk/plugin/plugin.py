@@ -22,8 +22,10 @@ def menuConnect():
     w.set_keep_above(True)
     w.show_all()
     w.set_keep_above(False)
+    w.grab_focus()
     c=b.get_object("button1")
     c.connect("clicked",lambda x:connect())
+
 
 def connect():
     #db = MySQLdb.connect(host=b.get_object("entry1").get_text(),user=b.get_object("entry3").get_text(),
@@ -31,10 +33,11 @@ def connect():
     #db = MySQLdb.connect(host="localhost",user="belas",passwd="824510802",db="skuska")
     global w
     w.hide()
-    a=Connection(1)
-    print a.typ
-    b=Connection(2)
-    print a.typ
+    a=Connection()
+    a.pripoj(1)
+    b=a.dajData('tabulka')
+    for row in b:
+        print row
     #cursor=db.cursor()
     #cursor.execute('SELECT * FROM tabulka')
     #for row in cursor:

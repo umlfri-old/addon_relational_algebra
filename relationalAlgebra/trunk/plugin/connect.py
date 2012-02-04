@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import MySQLdb
 
-def singleton(cls):
+def Singleton(cls):
     instance = {}
     def getinstance():
         if cls not in instance:
@@ -9,21 +9,27 @@ def singleton(cls):
         return instance[cls]
     return getinstance
 
-@singleton
+@Singleton
 class Connection:
-    def __init__(self,typ):
-        if typ == 1:
-            self.Database= MySQLdb.connect(host="localhost",user="belas",passwd="824510802",db="skuska")
-            self.typ="mysql"
-        elif typ == 2:
+    def pripoj(self,druh):
+        if druh == 1:
+            self.__database= MySQLdb.connect(host="localhost",user="belas",passwd="824510802",db="skuska")
+            self.__typ="mysql"
+        elif druh == 2:
             #pripojenie na oracle
-            self.typ="oracle"
-        elif typ == 3:
+            self.__typ="oracle"
+        elif druh == 3:
             #pripojenie na postreSQL
-            self.typ="postgreSQL"
+            self.__typ="postgreSQL"
         else:
             print "Nespravne pripojenie"
 
+    def getTyp(self):
+        print self.__typ
 
-
-
+    def dajData(self,tabulka):
+        prikaz='SELECT * FROM ' + tabulka
+        cursor=self.__database.cursor()
+        cursor.execute(prikaz)
+        return cursor
+    
