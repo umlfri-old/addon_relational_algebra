@@ -9,21 +9,23 @@
         <Sizer minheight="40" minwidth="60">
             <Ellipse border="black" fill="green">
                 <Align align="center center">
-                    <VBox>
-                        <TextBox text="π" font="Arial 20"></TextBox>
-                        <Padding top="10">
-                            <VBox>
-                            <Loop collection="#self.c">
+                    <Padding left="10" right="10">
+                        <VBox>
+                            <TextBox text="π" font="Arial 20"></TextBox>
+                            <Padding top="10">
                                 <VBox>
-                                <Condition condition="#_line > 0">
-                                 <TextBox text=", "></TextBox>
-                            </Condition>
-                            <TextBox text="#meno"></TextBox>
+                                <Loop collection="#self.c">
+                                    <VBox>
+                                    <Condition condition="#_line > 0">
+                                    <TextBox text=", "></TextBox>
+                                </Condition>
+                                <TextBox text="#meno"></TextBox>
+                                    </VBox>
+                            </Loop>
                                 </VBox>
-                        </Loop>
-                            </VBox>
-                        </Padding>
-                    </VBox>
+                            </Padding>
+                        </VBox>
+                    </Padding>
                 </Align>
             </Ellipse>
         </Sizer>

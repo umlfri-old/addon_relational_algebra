@@ -3,7 +3,7 @@
     <Icon path="icons/difference.png" />
     <Domain id="difference" identity="name" />
     <Connections>
-        <Item value="Relationship" allowrecursive="1"/>
+        <Item value="Relationship" allowrecursive="0" with="1"/>
     </Connections>
     <Appearance>
         <Sizer minheight="40" minwidth="60">
