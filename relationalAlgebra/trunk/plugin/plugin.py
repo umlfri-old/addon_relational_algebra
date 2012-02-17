@@ -11,6 +11,7 @@ def pluginMain(interface):
     menu = interface.gui_manager.main_menu.add_menu_item('DRA', '', -1, 'DRA')
     menu.add_submenu()
     submenu = menu.submenu
+    submenu = menu.submenu
     submenu.add_menu_item('Pripoj', lambda x:menuConnect(), -1, 'Pripoj k databaze')
     submenu.add_menu_item('Vykonaj',lambda z:execute(interface),-1,'Vykonaj')
     interface.transaction.autocommit = True
@@ -41,25 +42,25 @@ def connect():
     #for row in cursor:
     #   print row
 def execute(interface):
-    array=[]
     a = interface.current_diagram.selected
     tem=list(a)
     if len(tem) == 1:
-        select=a.next()
-        create(select)
-
-            
-
+        select=tem.pop()
+        object=create(None,select)
+        print object.execute()
     else:
         print "musis oznacit nejaky element"
     #for element in a:
      #   if element.object.type.name=="Selection":
       #
 
-def create(self,trunk):
+def create(self,trunk,ob=None):
     name=trunk.object.type.name
-    if name=="Union" :
-        pass
+    print trunk.object.name + "-nova funkcia"
+    if name=="Table":
+        object=Table(None,trunk.object.values["name"])
+    elif name=="Union" :
+        object=Union()
     elif name=="Intersection":
         pass
     elif name=="Product":
@@ -69,10 +70,9 @@ def create(self,trunk):
     elif name=="Division":
         pass
     elif name=="Selection":
-        object=Selection(select.object.values["column1"],select.object.values["condition"],select.object.values["column2"])
-        array.append(object)
+        object=Selection(trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"])
     elif name=="Projection":
-        pass
+        object=Projection(trunk.object.values["c"])
     elif name=="Inner join":
         pass
     elif name=="Left outter join":
@@ -81,18 +81,28 @@ def create(self,trunk):
         pass
     elif name=="Full outter join":
         pass
-    cons=trunk.connections
-    tem1=list(cons)
-    i=0
-    while(i<len(tem1)):
-        con=cons.next()
-        object1=con.source()
-        object.set(object1)
-
-    create(object1)
-        
-
-
-
-
-
+    if(ob!=None):
+        ob.set(object)
+    conn=trunk.connections
+    tem1=list(conn)
+    tem1.reverse()
+    con1=tem1.pop()
+    object1=con1.source
+    object2=None
+    if (object1.object.name != trunk.object.name):
+        create(None,object1,object)
+        print ("skoncil lavy koren")
+        if len(tem1)>=1:
+            con2=tem1.pop()
+            object2=con2.source
+    else:
+        if len(tem1)>=1:
+            con2=tem1.pop()
+            object1=con2.source
+            create(None,object1,object)
+    if(object2!=None):
+        if(object2.object.name != trunk.object.name):
+            create(None,object2,object)
+            print ("skoncil pravy koren")
+    if(ob==None):
+        return object
