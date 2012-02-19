@@ -14,6 +14,7 @@ def pluginMain(interface):
     submenu = menu.submenu
     submenu.add_menu_item('Pripoj', lambda x:menuConnect(), -1, 'Pripoj k databaze')
     submenu.add_menu_item('Vykonaj',lambda z:execute(interface),-1,'Vykonaj')
+    submenu.add_menu_item('Test',lambda y:test(),-1,'Test')
     interface.transaction.autocommit = True
     interface.set_main_loop(GtkMainLoop())
 def menuConnect():
@@ -37,17 +38,21 @@ def connect():
     global a
     a=Connection()
     a.pripoj(1)
-    #cursor=db.cursor()
-    #cursor.execute('SELECT * FROM tabulka')
-    #for row in cursor:
-    #   print row
+def test():
+    table=Table(a,"model")
+    b=table.execute()
+    print b
 def execute(interface):
     a = interface.current_diagram.selected
     tem=list(a)
     if len(tem) == 1:
         select=tem.pop()
         object=create(None,select)
-        print object.execute()
+        o=object.execute()
+        for row in o:
+            for column in row:
+                print column,
+            print "\n",
     else:
         print "musis oznacit nejaky element"
     #for element in a:
@@ -56,9 +61,8 @@ def execute(interface):
 
 def create(self,trunk,ob=None):
     name=trunk.object.type.name
-    print trunk.object.name + "-nova funkcia"
     if name=="Table":
-        object=Table(None,trunk.object.values["name"])
+        object=Table(a,trunk.object.values["name"])
     elif name=="Union" :
         object=Union()
     elif name=="Intersection":
@@ -91,7 +95,6 @@ def create(self,trunk,ob=None):
     object2=None
     if (object1.object.name != trunk.object.name):
         create(None,object1,object)
-        print ("skoncil lavy koren")
         if len(tem1)>=1:
             con2=tem1.pop()
             object2=con2.source
@@ -103,6 +106,5 @@ def create(self,trunk,ob=None):
     if(object2!=None):
         if(object2.object.name != trunk.object.name):
             create(None,object2,object)
-            print ("skoncil pravy koren")
     if(ob==None):
         return object
