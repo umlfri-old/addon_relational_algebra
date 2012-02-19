@@ -2,23 +2,58 @@ class Table:
     def __init__(self,data,table):
         self.__database=data
         self.__table_name=table
-
     def execute(self):
-        return 1
-        #return self.__database.dajData(self.__table_name)
-    def __str__(self):
-        return "ja som table s menom" + self.__table_name
+        cursor=self.__database.vykonaj('SHOW COLUMNS IN ' +self.__table_name)
+        columns=[]
+        i=0
+        for row in cursor:
+            for column in row:
+                if i==0:
+                    columns.append(column)
+                i=i+1
+            i=0
+        data=self.__database.dajData(self.__table_name)
+        table=[]
+        tem=list(data)
+        for i in range(0,len(tem)):
+            if(i==0):
+                table.append(columns)
+            new=[]
+            for y in range(0,len(columns)):
+                new.append(tem[i][y])
+            table.append(new)
+        return table
 class Projection:
     def __init__(self,data):
-        self.__data=data
+        self.__data=[]
+        a=[]
+        b=[]
+        a=data.rsplit(":")
+        for i in range(1,len(a)):
+            b=a[i].rsplit("'")
+            self.__data.append(b[1])
     def set(self,ancestor):
         self.__ancestor=ancestor
     def execute(self):
         ret=self.__ancestor.execute()
-        return ret+1
-    def __str__(self):
-        ret=self.__ancestor.__str__()
-        return ret+"..."+"ja som projection "
+        columns=ret[0]
+        indexes=[]
+        table=[]
+        for i in range(0,len(self.__data)):
+            try:
+                indexes.append(columns.index(self.__data[i]))
+            except ValueError:
+                pass
+        for i in range(0,len(ret)):
+            new=[]
+            for y in range(0,len(columns)):
+                try:
+                    a=indexes.index(y)
+                    new.append(ret[i][y])
+                except ValueError:
+                    pass
+            table.append(new)
+        return table
 class Selection:
     def __init__(self,column,condition,data):
         self.__column=column
@@ -28,10 +63,6 @@ class Selection:
         self.__ancestor=ancestor
     def execute(self):
         ret=self.__ancestor.execute()
-        return ret+2
-    def __str__(self):
-        ret=self.__ancestor.__str__()
-        return ret+"..."+"ja som select"
 class Union:
     def __init__(self):
         self.__ancestor_left=None
@@ -44,8 +75,4 @@ class Union:
     def execute(self):
         ret=self.__ancestor_left.execute()
         ret1=self.__ancestor_right.execute()
-        return ret*ret1
-    def __str__(self):
-        ret=self.__ancestor_left.__str__()
-        ret1=self.__ancestor_right.__str__()
-        return ret+ret1+"..."+"ja som union"
+        return ret + ret1

@@ -13,7 +13,7 @@ def Singleton(cls):
 class Connection:
     def pripoj(self,druh):
         if druh == 1:
-            self.__database= MySQLdb.connect(host="localhost",user="belas",passwd="824510802",db="skuska")
+            self.__database= MySQLdb.connect(host="localhost",user="belas",passwd="824510802",db="cars")
             self.__typ="mysql"
         elif druh == 2:
             #pripojenie na oracle
@@ -32,4 +32,7 @@ class Connection:
         cursor=self.__database.cursor()
         cursor.execute(prikaz)
         return cursor
-    
+    def vykonaj(self,prikaz):
+        cursor=self.__database.cursor()
+        cursor.execute(prikaz)
+        return cursor
