@@ -11,7 +11,6 @@ def pluginMain(interface):
     menu = interface.gui_manager.main_menu.add_menu_item('DRA', '', -1, 'DRA')
     menu.add_submenu()
     submenu = menu.submenu
-    submenu = menu.submenu
     submenu.add_menu_item('Pripoj', lambda x:menuConnect(), -1, 'Pripoj k databaze')
     submenu.add_menu_item('Vykonaj',lambda z:execute(interface),-1,'Vykonaj')
     submenu.add_menu_item('Test',lambda y:test(),-1,'Test')
@@ -47,32 +46,34 @@ def execute(interface):
     tem=list(a)
     if len(tem) == 1:
         select=tem.pop()
-        object=create(None,select)
+        object=create(select)
         o=object.execute()
-        for row in o:
-            for column in row:
-                print column,
-            print "\n",
+        if o==None:
+            print "empty result"
+        else:
+            for row in o:
+                for column in row:
+                    print column,
+                print "\n",
     else:
         print "musis oznacit nejaky element"
-    #for element in a:
-     #   if element.object.type.name=="Selection":
-      #
-
-def create(self,trunk,ob=None):
-    name=trunk.object.type.name
+def create(trunk,ob=None):
+    ax = trunk.object
+    ax = ax.type
+    print `ax`
+    name= ax.name
     if name=="Table":
         object=Table(a,trunk.object.values["name"])
     elif name=="Union" :
         object=Union()
     elif name=="Intersection":
-        pass
+        object=Intersection()
     elif name=="Product":
-        pass
+        object=Product()
     elif name=="Difference":
-        pass
+        object=Difference()
     elif name=="Division":
-        pass
+        object=Division()
     elif name=="Selection":
         object=Selection(trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"])
     elif name=="Projection":
@@ -94,7 +95,7 @@ def create(self,trunk,ob=None):
     object1=con1.source
     object2=None
     if (object1.object.name != trunk.object.name):
-        create(None,object1,object)
+        create(object1,object)
         if len(tem1)>=1:
             con2=tem1.pop()
             object2=con2.source
@@ -102,7 +103,7 @@ def create(self,trunk,ob=None):
         if len(tem1)>=1:
             con2=tem1.pop()
             object1=con2.source
-            create(None,object1,object)
+            create(object1,object)
     if(object2!=None):
         if(object2.object.name != trunk.object.name):
             create(None,object2,object)

@@ -13,6 +13,7 @@
            <Value>=</Value>
            <Value>&gt;=</Value>
            <Value>&lt;=</Value>
+           <Value>≠</Value>
        </Enum>
    </Attribute>
 <Attribute id="column2" name="Column 2">
