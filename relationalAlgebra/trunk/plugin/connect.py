@@ -13,7 +13,7 @@ def Singleton(cls):
 class Connection:
     def pripoj(self,druh):
         if druh == 1:
-            self.__database= MySQLdb.connect(host="localhost",user="belas",passwd="824510802",db="cars")
+            self.__database= MySQLdb.connect(host="localhost",user="root",passwd="maxik8245",db="cars")
             self.__typ="mysql"
         elif druh == 2:
             #pripojenie na oracle

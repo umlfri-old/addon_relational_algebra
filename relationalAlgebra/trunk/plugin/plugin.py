@@ -3,7 +3,7 @@ import gtk
 from org.umlfri.api.mainLoops import GtkMainLoop
 from gtk.gdk import WindowTypeHint
 import MySQLdb
-from connect import Connection
+from connect import *
 from operations import *
 
 
@@ -34,9 +34,9 @@ def connect():
     #db = MySQLdb.connect(host="localhost",user="belas",passwd="824510802",db="skuska")
     global w
     w.hide()
-    global a
     a=Connection()
     a.pripoj(1)
+    b=Connection()
 def test():
     table=Table(a,"model")
     b=table.execute()
@@ -58,10 +58,8 @@ def execute(interface):
     else:
         print "musis oznacit nejaky element"
 def create(trunk,ob=None):
-    ax = trunk.object
-    ax = ax.type
-    print `ax`
-    name= ax.name
+    a=Connection()
+    name= trunk.object.type.name
     if name=="Table":
         object=Table(a,trunk.object.values["name"])
     elif name=="Union" :
@@ -106,6 +104,6 @@ def create(trunk,ob=None):
             create(object1,object)
     if(object2!=None):
         if(object2.object.name != trunk.object.name):
-            create(None,object2,object)
+            create(object2,object)
     if(ob==None):
         return object

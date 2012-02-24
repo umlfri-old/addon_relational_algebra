@@ -58,7 +58,16 @@ class Selection:
     def __init__(self,column,condition,data):
         self.__column=column
         self.__condition=condition
-        self.__data=data
+        try:
+            self.__data=float(data)
+        except ValueError:
+            self.__data=""
+            if((data[0]=='"') and (data[-1]=='"') or ((data[0]=="'") and (data[-1]=="'"))):
+                for i in range(0,len(data)):
+                    if (i!=0)&(i!=(len(data)-1)):
+                        self.__data=self.__data+data[i]
+            else:
+                print "data error"
     def set(self,ancestor):
         self.__ancestor=ancestor
     def execute(self):
@@ -67,17 +76,41 @@ class Selection:
         try:
             index=columns.index(self.__column)
         except ValueError:
+            print "selection error"
             return None
         table=[]
-        for i in range(0,len(ret)):
-            new=[]
-            for y in range(0,len(columns)):
-                try:
-                    if(ret[i][index]):
-                        pass
-                except ValueError:
-                    pass
-            table.append(new)
+        table.append(columns)
+        if(self.__condition=="="):
+            for i in range(1,len(ret)):
+                if(ret[i][index]==self.__data):
+                    table.append(ret[i])
+        elif(self.__condition=="<"):
+            for i in range(1,len(ret)):
+                if(ret[i][index]<self.__data):
+                    table.append(ret[i])
+        elif(self.__condition==">"):
+            for i in range(1,len(ret)):
+                if(ret[i][index]>self.__data):
+                    table.append(ret[i])
+        elif(self.__condition==">="):
+            for i in range(1,len(ret)):
+                if(ret[i][index]>=self.__data):
+                    table.append(ret[i])
+        elif(self.__condition=="<="):
+            for i in range(1,len(ret)):
+                if(ret[i][index]<=self.__data):
+                    table.append(ret[i])
+        elif(self.__condition=="!="):
+            for i in range(1,len(ret)):
+                if(ret[i][index]!=self.__data):
+                    table.append(ret[i])
+        elif(self.__condition=="LIKE"):
+            
+            for i in range(1,len(ret)):
+                row=ret[i][index]
+        elif(self.__condition=="NOT LIKE"):
+            pass
+        return table
 class Product:
     def __init__(self):
         self.__ancestor_left=None
@@ -164,8 +197,6 @@ class Division:
         ret1=self.__ancestor_right.execute()
         columns=ret[0]
         columns1=ret1[0]
-        print columns
-        print columns1
         table=[]
         indexes=[]
         for i in range(0,len(columns1)):
