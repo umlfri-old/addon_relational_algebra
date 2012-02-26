@@ -1,3 +1,4 @@
+import re
 class Table:
     def __init__(self,data,table):
         self.__database=data
@@ -105,11 +106,31 @@ class Selection:
                 if(ret[i][index]!=self.__data):
                     table.append(ret[i])
         elif(self.__condition=="LIKE"):
-            
+            regex=""
+            for i in range(0,len(self.__data)):
+                if(self.__data[i]=="_"):
+                    regex=regex+"."
+                elif(self.__data[i]=="%"):
+                    regex=regex+".*"
+                else:
+                    regex=regex+self.__data[i]
             for i in range(1,len(ret)):
-                row=ret[i][index]
+                a=re.match(regex,ret[i][index])
+                if(a!=None):
+                    table.append(ret[i])
         elif(self.__condition=="NOT LIKE"):
-            pass
+            regex=""
+            for i in range(0,len(self.__data)):
+                if(self.__data[i]=="_"):
+                    regex=regex+"."
+                elif(self.__data[i]=="%"):
+                    regex=regex+".*"
+                else:
+                    regex=regex+self.__data[i]
+            for i in range(1,len(ret)):
+                a=re.match(regex,ret[i][index])
+                if(a==None):
+                    table.append(ret[i])
         return table
 class Product:
     def __init__(self):
