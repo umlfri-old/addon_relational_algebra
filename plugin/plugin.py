@@ -58,9 +58,9 @@ def execute(interface):
     else:
         print "musis oznacit nejaky element"
 def create(trunk,ob=None):
-    a=Connection()
     name= trunk.object.type.name
     if name=="Table":
+        a=Connection()
         object=Table(a,trunk.object.values["name"])
     elif name=="Union" :
         object=Union()
