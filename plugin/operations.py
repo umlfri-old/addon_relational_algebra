@@ -217,9 +217,12 @@ class Division:
         ret=self.__ancestor_left.execute()
         ret1=self.__ancestor_right.execute()
         columns=ret[0]
+        columns_help=columns
         columns1=ret1[0]
         table=[]
         indexes=[]
+        indexes2=[]
+        match={}
         for i in range(0,len(columns1)):
             try:
                 indexes.append(columns.index(columns1[i]))
@@ -228,7 +231,42 @@ class Division:
                 print "division error"
                 return None
         table.append(columns)
+        for i in range(0,len(columns)):
+            indexes2.append(columns_help.index(columns[i]))
+        for i in range(1,len(ret)):
+            string1=""
+            for a in range(0,len(indexes)):
+                string1=string1+","+ret[i][indexes[a]]
+            for y in range(1,len(ret1)):
+                string2=""
+                for b in range(0,len(indexes)):
+                    string2=string2+","+ret1[y][b]
+                if(string1==string2):
+                    string3=""
+                    for c in range(0,len(indexes2)):
+                        string3=string3+","+ret[i][c]
+                    if(match.get(string3)==None):
+                        new=[]
+                        new.append(i)
+                        new.append(1)
+                        match[string3]=new
+                    else:
+                        new=match.get(string3)
+                        number=new[1]
+                        new[1]=number+1
+                        match[string3]=new
+        values=match.values()
+        for i in range(0,len(values)):
+            new=values[i]
+            if(new[1]==len(column1)):
+                row=new[0]
+                new1=[]
+                for y in range(0,len(indexes2)):
+                    new1.append(ret[row][y])
+                table.append(new1)
         return table
+
+
 class Difference:
     def __init__(self):
         self.__ancestor_left=None
