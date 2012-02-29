@@ -258,15 +258,13 @@ class Division:
         values=match.values()
         for i in range(0,len(values)):
             new=values[i]
-            if(new[1]==len(column1)):
+            if(new[1]==(len(ret1)-1)):
                 row=new[0]
                 new1=[]
                 for y in range(0,len(indexes2)):
                     new1.append(ret[row][y])
                 table.append(new1)
         return table
-
-
 class Difference:
     def __init__(self):
         self.__ancestor_left=None
