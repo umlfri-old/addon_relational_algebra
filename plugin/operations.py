@@ -279,8 +279,6 @@ class Difference:
         ret1=self.__ancestor_right.execute()
         columns=ret[0]
         columns1=ret1[0]
-        print columns
-        print columns1
         table=[]
         table.append(columns)
         if columns==columns1:

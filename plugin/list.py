@@ -42,10 +42,9 @@ class PyApp(gtk.Window):
         sw.add(treeView)
 
         self.create_columns(treeView)
-        self.statusbar = gtk.Statusbar()
-        
-        vbox.pack_start(self.statusbar, False, False, 0)
 
+        
+       
         self.add(vbox)
         self.show_all()
 

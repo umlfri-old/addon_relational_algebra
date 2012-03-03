@@ -6,6 +6,7 @@ import MySQLdb
 from connect import *
 from operations import *
 from list import *
+import math
 
 def pluginMain(interface):
     menu = interface.gui_manager.main_menu.add_menu_item('DRA', '', -1, 'DRA')
@@ -85,24 +86,34 @@ def create(trunk,ob=None):
         pass
     if(ob!=None):
         ob.set(object)
-    conn=trunk.connections
-    tem1=list(conn)
-    tem1.reverse()
-    con1=tem1.pop()
-    object1=con1.source
-    object2=None
-    if (object1.object.name != trunk.object.name):
-        create(object1,object)
-        if len(tem1)>=1:
-            con2=tem1.pop()
-            object2=con2.source
-    else:
-        if len(tem1)>=1:
-            con2=tem1.pop()
-            object1=con2.source
-            create(object1,object)
-    if(object2!=None):
-        if(object2.object.name != trunk.object.name):
-            create(object2,object)
+    connections=trunk.connections
+    list_connection=list(connections)
+    source_position=trunk.position
+    left_object=None
+    right_object=None
+    for i in range(0,len(list_connection)):
+        conn=list_connection[i]
+        object1=conn.source
+        object1_position=object1.position
+        corner=math.atan2(source_position[1]-object1_position[1],source_position[0]-object1_position[0])
+        if(corner<0):
+            print "wrong orientation of diagram"
+            return None
+        else:
+            if(left_object==None):
+                left_object=object1
+                if(len(list_connection)!=1):
+                    conn2=list_connection[i+1]
+                    right_object=conn2.source
+            else:
+                left_object_position=left_object.position
+                if(math.atan2(source_position[1]-left_object_position[1],source_position[0]-left_object_position[0])>corner):
+                    right_object=left_object
+                    left_object=object1
+    if (left_object.object.name != trunk.object.name):
+        create(left_object,object)
+    if(right_object!=None):
+        if(right_object.object.name != trunk.object.name):
+            create(right_object,object)
     if(ob==None):
         return object
