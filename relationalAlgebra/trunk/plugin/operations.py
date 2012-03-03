@@ -293,3 +293,60 @@ class Difference:
             print "difference error"
             return None
         return table
+class Inner_Join:
+    def __init__(self,column1,condition,column2):
+        self.__ancestor_left=None
+        self.__ancestor_right=None
+        self.__column1=column1
+        self.__condition=condition
+        self.__column2=column2
+    def set(self,ancestor):
+        if(self.__ancestor_left==None):
+            self.__ancestor_left=ancestor
+        else:
+            self.__ancestor_right=ancestor
+    def condition(self,column1,column2):
+        if(self.__condition=="="):
+            if(column1==column2):
+                return True
+            else:
+                return False
+        elif(self.__condition=="<"):
+            if(column1<column2):
+                return True
+            else:
+                return False
+        elif(self.__condition==">"):
+            if(column1>column2):
+                return True
+            else:
+                return False
+        elif(self.__condition=="<="):
+            if(column1<=column2):
+                return True
+            else:
+                return False
+        elif(self.__condition==">="):
+            if(column1>=column2):
+                return True
+            else:
+                return False
+    def execute(self):
+        ret=self.__ancestor_left.execute()
+        ret1=self.__ancestor_right.execute()
+        columns=ret[0]
+        columns1=ret1[0]
+        try:
+            index1=columns.index(self.__column1)
+            index2=columns1.index(self.__column2)
+        except:
+            print "inner join error"
+            return
+        new_columns=columns+columns1
+        table=[]
+        table.append(new_columns)
+        for i in range(1,len(ret)):
+            for y in range(1,len(ret1)):
+                if(self.condition(ret[i][index1],ret[y][index2])==True):
+                    new=ret[i]+ret1[y]
+                    table.append(new)

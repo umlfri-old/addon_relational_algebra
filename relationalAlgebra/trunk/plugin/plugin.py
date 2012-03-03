@@ -5,7 +5,7 @@ from gtk.gdk import WindowTypeHint
 import MySQLdb
 from connect import *
 from operations import *
-
+from list import *
 
 def pluginMain(interface):
     menu = interface.gui_manager.main_menu.add_menu_item('DRA', '', -1, 'DRA')
@@ -13,7 +13,6 @@ def pluginMain(interface):
     submenu = menu.submenu
     submenu.add_menu_item('Pripoj', lambda x:menuConnect(), -1, 'Pripoj k databaze')
     submenu.add_menu_item('Vykonaj',lambda z:execute(interface),-1,'Vykonaj')
-    submenu.add_menu_item('Test',lambda y:test(),-1,'Test')
     interface.transaction.autocommit = True
     interface.set_main_loop(GtkMainLoop())
 def menuConnect():
@@ -37,10 +36,6 @@ def connect():
     a=Connection()
     a.pripoj(1)
     b=Connection()
-def test():
-    table=Table(a,"model")
-    b=table.execute()
-    print b
 def execute(interface):
     a = interface.current_diagram.selected
     tem=list(a)
@@ -55,6 +50,10 @@ def execute(interface):
                 for column in row:
                     print column,
                 print "\n",
+        PyApp(o)
+        gtk.main()
+
+
     else:
         print "musis oznacit nejaky element"
 def create(trunk,ob=None):
@@ -77,7 +76,7 @@ def create(trunk,ob=None):
     elif name=="Projection":
         object=Projection(trunk.object.values["c"])
     elif name=="Inner join":
-        pass
+        object=Inner_Join(trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"])
     elif name=="Left outter join":
         pass
     elif name=="Right outter join":
