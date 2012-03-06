@@ -11,22 +11,25 @@ def Singleton(cls):
 
 @Singleton
 class Connection:
+    def __init__(self):
+        self.__typ=""
     def pripoj(self,druh):
-        if druh == 1:
+        if druh == 0:
             self.__database= MySQLdb.connect(host="localhost",user="root",passwd="maxik8245",db="cars")
             self.__typ="mysql"
-        elif druh == 2:
+        elif druh == 1:
             #pripojenie na oracle
-            self.__typ="oracle"
-        elif druh == 3:
+            raise ValueError
+        elif druh == 2:
             #pripojenie na postreSQL
             self.__typ="postgreSQL"
         else:
             print "Nespravne pripojenie"
-
+    def disconnect(self):
+        self.__typ=""
     def getTyp(self):
-        print self.__typ
-
+        return self.__typ
+    
     def dajData(self,tabulka):
         prikaz='SELECT * FROM ' + tabulka
         cursor=self.__database.cursor()
