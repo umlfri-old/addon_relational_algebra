@@ -6,16 +6,19 @@ import MySQLdb
 from connect import *
 from operations import *
 from list import *
+from attention import *
 import math
 
 
 class DRA:
     def __init__(self,interface):
         self.__interface=interface
+        self.__orientation=False
         self.__menu=None
         self.__menuConnect=None
+        self.__connection_Select=False
     def pluginMain(self):
-        self.__menu = self.__interface.gui_manager.main_menu.add_menu_item('DRA', '', -1, 'DRA')
+        self.__menu = self.__interface.gui_manager.main_menu.add_menu_item('DRA', '', -1, 'Relational algebra')
         self.__menu.add_submenu()
         self.__menu.visible=False
         self.__submenu = self.__menu.submenu
@@ -43,14 +46,12 @@ class DRA:
         store.append (["Oracle"])
         store.append (["PostgreSQL"])
         self.__combobox=self.__gtkBuilder.get_object("combobox1")
-        self.__attention=self.__gtkBuilder.get_object("accellabel1")
         self.__combobox.set_model(store)
         cell = gtk.CellRendererText()
         self.__combobox.pack_start(cell, True)
         self.__combobox.add_attribute(cell, 'text',0)
         self.__menuConnect.set_keep_above(True)
         self.__menuConnect.show_all()
-        self.__attention.hide()
         self.__menuConnect.set_keep_above(False)
         self.__menuConnect.grab_focus()
         connect_button=self.__gtkBuilder.get_object("button1")
@@ -66,9 +67,21 @@ class DRA:
         user=self.__gtkBuilder.get_object("entry3").get_text()
         password=self.__gtkBuilder.get_object("entry4").get_text()
         type=self.__combobox.get_active()
-        if(type==-1)|(host=="")|(database=="")|(user=="")|(password==""):
+        if(type==-1):
             self.__menuConnect.show()
-            self.__attention.show()
+            attention=InfoBarDemo("Connect error","You must choose type of database","Warning")
+        elif (host==""):
+            self.__menuConnect.show()
+            attention=InfoBarDemo("Connect error","You must type host name","Warning")
+        elif (database==""):
+            self.__menuConnect.show()
+            attention=InfoBarDemo("Connect error","You must type name of database","Warning")
+        elif (user==""):
+            self.__menuConnect.show()
+            attention=InfoBarDemo("Connect error","You must type user name","Warning")
+        elif(password==""):
+            self.__menuConnect.show()
+            attention=InfoBarDemo("Connect error","You must type password","Warning")
         else:
             try:
                 a=Connection()
@@ -80,12 +93,8 @@ class DRA:
                     if(m.gui_id=="disconnect"):
                         m.visible=True
             except:
-                self.__gtkBuilder.add_from_file("share\\addons\\DRA\\plugin\\attention.glade")
-                self.__attention=self.__gtkBuilder.get_object("messagedialog1")
-                self.__attention.set_keep_above(True)
-                self.__attention.show_all()
-                ok_button=self.__gtkBuilder.get_object("ok")
-                ok_button.connect("clicked",lambda z:self.ok())
+                self.__menuConnect.show()
+                attention=InfoBarDemo("Connection error","Connect to database failed","Warning")
     def disconnect(self):
         a=Connection()
         a.disconnect()
@@ -95,30 +104,31 @@ class DRA:
                 m.visible=True
             if(m.gui_id=="disconnect"):
                 m.visible=False
-    def ok(self):
-        self.__attention.hide()
     def execute(self):
+        self.__orientation=False
+        self.__connection_Select=False
         a = self.__interface.current_diagram.selected
         tem=list(a)
         c=Connection()
-        if len(tem) == 1:
-            if(c.getTyp()!= ""):
+        if (c.getTyp()!= ""):
+            if (len(tem) == 1):
                 select=tem.pop()
                 object=self.create(select)
-                o=object.execute()
-                if o==None:
-                    print "empty result"
+                if object==-1:
+                    attention=InfoBarDemo("Execute error","Wrong orientation of model","Warning")
+                elif object==0:
+                    attention=InfoBarDemo("Execute error","You cannot select connection","Warning")
                 else:
-                    for row in o:
-                        for column in row:
-                            print column,
-                        print "\n",
-                PyApp(o)
-                gtk.main()
+                    o=object.execute()
+                    if o==None:
+                        attention=InfoBarDemo("Execute error","Empty result","Warning")
+                    else:
+                        PyApp(o)
+                        gtk.main()
             else:
-                print "musis sa najskor prihlasit do databazy"
+                attention=InfoBarDemo("Execute error","You must select one element","Warning")
         else:
-            print "musis oznacit nejaky element"
+            attention=InfoBarDemo("Connect error","You must first connect to database","Warning")
     def create(self,trunk,ob=None):
         name= trunk.object.type.name
         if name=="Table":
@@ -146,22 +156,23 @@ class DRA:
             pass
         elif name=="Full outter join":
             pass
-        if(ob!=None):
-            ob.set(object)
-        connections=trunk.connections
-        list_connection=list(connections)
-        source_position=trunk.position
-        left_object=None
-        right_object=None
-        for i in range(0,len(list_connection)):
-            conn=list_connection[i]
-            object1=conn.source
-            object1_position=object1.position
-            corner=math.atan2(source_position[1]-object1_position[1],source_position[0]-object1_position[0])
-            if(corner<0):
-                print "wrong orientation of diagram"
-                return None
-            else:
+        else:
+            self.__connection_Select=True
+        if (self.__connection_Select==False):
+            if(ob!=None):
+                ob.set(object)
+            connections=trunk.connections
+            list_connection=list(connections)
+            source_position=trunk.position
+            left_object=None
+            right_object=None
+            for i in range(0,len(list_connection)):
+                conn=list_connection[i]
+                object1=conn.source
+                object1_position=object1.position
+                corner=math.atan2(source_position[1]-object1_position[1],source_position[0]-object1_position[0])
+                if(corner<0):
+                    self.__orientation=True
                 if(left_object==None):
                     left_object=object1
                     if(len(list_connection)!=1):
@@ -172,10 +183,13 @@ class DRA:
                     if(math.atan2(source_position[1]-left_object_position[1],source_position[0]-left_object_position[0])>corner):
                         right_object=left_object
                         left_object=object1
-        if (left_object.object.name != trunk.object.name):
-            self.create(left_object,object)
-        if(right_object!=None):
-            if(right_object.object.name != trunk.object.name):
-                self.create(right_object,object)
-        if(ob==None):
-            return object
+            if (left_object.object.name != trunk.object.name):
+                self.create(left_object,object)
+            if(right_object!=None):
+                if(right_object.object.name != trunk.object.name):
+                    self.create(right_object,object)
+            if(ob==None) and (self.__orientation==False):
+                return object
+            elif(ob==None) and (self.__orientation==True):
+                return -1
+        return 0

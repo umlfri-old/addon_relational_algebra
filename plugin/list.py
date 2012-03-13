@@ -18,10 +18,19 @@ import gtk
 class PyApp(gtk.Window):
     def __init__(self,data):
         super(PyApp, self).__init__()
-        
         self.__data=data
-        self.__header=self.__data[0]
-        self.set_size_request(350, 250)
+        height=self.__data.getLen()
+        self.__header=self.__data.getColumnsName()
+        width=180
+        length=0
+        z=0
+        for i in self.__header:
+            length += len(i)
+        if length>30:
+            z=length-30
+        width=width+(z*15)
+        self.set_size_request(width, 50+(height*25))
+        self.destroy_with_parent
         self.set_position(gtk.WIN_POS_CENTER)
         
         self.connect("destroy", gtk.main_quit)
@@ -40,23 +49,16 @@ class PyApp(gtk.Window):
         treeView = gtk.TreeView(store)
         treeView.set_rules_hint(True)
         sw.add(treeView)
-
         self.create_columns(treeView)
-
-        
-       
         self.add(vbox)
         self.show_all()
-
-
     def create_model(self):
         
         
         store = gtk.ListStore(*([str] * len(self.__header)))
 
-        for i in range(1,len(self.__data)):
-            store.append(self.__data[i])
-
+        for i in self.__data:
+            store.append(i.getData())
         return store
 
 
