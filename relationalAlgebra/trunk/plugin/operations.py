@@ -1,34 +1,43 @@
 import re
+import copy
+from relation import *
+from row import *
 class Table:
     def __init__(self,data,table):
         self.__database=data
         self.__table_name=table
     def execute(self):
+        #return name of columns and store into variable header
         cursor=self.__database.vykonaj('SHOW COLUMNS IN ' +self.__table_name)
-        columns=[]
+        #variable to store columns name with their table name
+        header=[[],[]]
         i=0
         for row in cursor:
             for column in row:
-                if i==0:
-                    columns.append(column)
-                i=i+1
+                if i is 0:
+                    header[0].append(column)
+                    str=self.__table_name+"."+column
+                    header[1].append(str)
+                i += 1
             i=0
+        #create new relation with columns name
+        relation=Relation(header)
+        #return data from table
         data=self.__database.dajData(self.__table_name)
-        table=[]
         tem=list(data)
+        #from all data create class row with columns name(columns name with their table name) and with data and add to relation
         for i in range(0,len(tem)):
-            if(i==0):
-                table.append(columns)
             new=[]
-            for y in range(0,len(columns)):
+            #na toto sa spytat aby header nebol stale odkaz na tu istu instanciu header ale aby kazdy row mal svoju vlastnu
+            for y in range(0,len(header[0])):
                 new.append(tem[i][y])
-            table.append(new)
-        return table
+            header1=copy.deepcopy(header)
+            relation.addRow(Row(new,header1))
+        return relation
 class Projection:
     def __init__(self,data):
+        #attribute to store name of columns,which are selected from relation
         self.__data=[]
-        a=[]
-        b=[]
         a=data.rsplit(":")
         for i in range(1,len(a)):
             b=a[i].rsplit("'")
@@ -36,25 +45,43 @@ class Projection:
     def set(self,ancestor):
         self.__ancestor=ancestor
     def execute(self):
+        #return relation of ancestor
         ret=self.__ancestor.execute()
-        columns=ret[0]
+        #store header
+        header=ret.getHeader()
         indexes=[]
-        table=[]
+        #find and store into indexes columns numbers, which are selected
+        #at first try to search in header[0](represented columns name without table_name) and then try to search
+        #in header[1](represented columns name with table_name)
         for i in range(0,len(self.__data)):
             try:
-                indexes.append(columns.index(self.__data[i]))
+                index=header[0].index(self.__data[i])
+                indexes.append(index)
             except ValueError:
-                pass
-        for i in range(0,len(ret)):
-            new=[]
-            for y in range(0,len(columns)):
                 try:
-                    a=indexes.index(y)
-                    new.append(ret[i][y])
+                    index=header[1].index(self.__data[i])
+                    indexes.append(index)
                 except ValueError:
-                    pass
-            table.append(new)
-        return table
+                    return None
+
+        #create new header with selected columns
+        for i in range(len(header[0])-1,-1,-1):
+            try:
+                indexes.index(i)
+            except ValueError:
+                del header[0][i]
+                del header[1][i]
+        relation=Relation(header)
+        #edit each row(delete columns which arent selected)
+        for row in ret:
+            for i in range(row.getLen()-1,-1,-1):
+                try:
+                    indexes.index(i)
+                except ValueError:
+                    row.deleteColumn(i)
+            relation.addRow(row)
+        return relation
+
 class Selection:
     def __init__(self,column,condition,data):
         self.__column=column
@@ -63,7 +90,7 @@ class Selection:
             self.__data=float(data)
         except ValueError:
             self.__data=""
-            if((data[0]=='"') and (data[-1]=='"') or ((data[0]=="'") and (data[-1]=="'"))):
+            if(data[0]=='"') and (data[-1]=='"') or (data[0]=="'" and data[-1]=="'"):
                 for i in range(0,len(data)):
                     if (i!=0)&(i!=(len(data)-1)):
                         self.__data=self.__data+data[i]
@@ -73,143 +100,101 @@ class Selection:
         self.__ancestor=ancestor
     def execute(self):
         ret=self.__ancestor.execute()
-        columns=ret[0]
+        header=ret.getHeader()
         try:
-            index=columns.index(self.__column)
+            index=header[0].index(self.__column)
         except ValueError:
-            print "selection error"
-            return None
-        table=[]
-        table.append(columns)
-        if(self.__condition=="="):
-            for i in range(1,len(ret)):
-                if(ret[i][index]==self.__data):
-                    table.append(ret[i])
-        elif(self.__condition=="<"):
-            for i in range(1,len(ret)):
-                if(ret[i][index]<self.__data):
-                    table.append(ret[i])
-        elif(self.__condition==">"):
-            for i in range(1,len(ret)):
-                if(ret[i][index]>self.__data):
-                    table.append(ret[i])
-        elif(self.__condition==">="):
-            for i in range(1,len(ret)):
-                if(ret[i][index]>=self.__data):
-                    table.append(ret[i])
-        elif(self.__condition=="<="):
-            for i in range(1,len(ret)):
-                if(ret[i][index]<=self.__data):
-                    table.append(ret[i])
-        elif(self.__condition=="!="):
-            for i in range(1,len(ret)):
-                if(ret[i][index]!=self.__data):
-                    table.append(ret[i])
-        elif(self.__condition=="LIKE"):
-            regex=""
-            for i in range(0,len(self.__data)):
-                if(self.__data[i]=="_"):
-                    regex=regex+"."
-                elif(self.__data[i]=="%"):
-                    regex=regex+".*"
-                else:
-                    regex=regex+self.__data[i]
-            for i in range(1,len(ret)):
-                a=re.match(regex,ret[i][index])
-                if(a!=None):
-                    table.append(ret[i])
-        elif(self.__condition=="NOT LIKE"):
-            regex=""
-            for i in range(0,len(self.__data)):
-                if(self.__data[i]=="_"):
-                    regex=regex+"."
-                elif(self.__data[i]=="%"):
-                    regex=regex+".*"
-                else:
-                    regex=regex+self.__data[i]
-            for i in range(1,len(ret)):
-                a=re.match(regex,ret[i][index])
-                if(a==None):
-                    table.append(ret[i])
-        return table
+            try:
+                index=header[1].index(self.__column)
+            except ValueError:
+                print "selection error"
+                return None
+        relation=Relation(header)
+        for i in ret:
+            if condition(i.getData(index),self.__data,self.__condition):
+                relation.addRow(Row(i.getData(),i.getHeader()))
+        return relation
 class Product:
     def __init__(self):
         self.__ancestor_left=None
         self.__ancestor_right=None
     def set(self,ancestor):
-        if(self.__ancestor_left==None):
+        if self.__ancestor_left is None :
             self.__ancestor_left=ancestor
         else:
             self.__ancestor_right=ancestor
     def execute(self):
         ret=self.__ancestor_left.execute()
         ret1=self.__ancestor_right.execute()
-        table=[]
-        columns=ret[0]+ret1[0]
-        table.append(columns)
-        for i in range(1,len(ret)):
-            for y in range(1,len(ret1)):
-                new=ret[i]+ret1[y]
-                table.append(new)
-        return table
+        header=ret.getHeader()
+        header1=ret1.getHeader()
+        header_new=[[],[]]
+        header_new[0]=header[0]+header1[0]
+        header_new[1]=header1[1]+header1[1]
+        relation=Relation(header_new)
+        for i in ret:
+            for y in ret1:
+                new=i.getData()+y.getData()
+                relation.addRow(Row(new,copy.deepcopy(header_new)))
+        return relation
 class Union:
     def __init__(self):
         self.__ancestor_left=None
         self.__ancestor_right=None
     def set(self,ancestor):
-        if(self.__ancestor_left==None):
+        if self.__ancestor_left is None :
             self.__ancestor_left=ancestor
         else:
             self.__ancestor_right=ancestor
     def execute(self):
         ret=self.__ancestor_left.execute()
         ret1=self.__ancestor_right.execute()
-        columns=ret[0]
-        columns1=ret1[0]
-        table=[]
-        if columns==columns1:
-            table.append(columns)
-            for i in range(1,len(ret)):
-                table.append(ret[i])
-            for i in range(1,len(ret1)):
-                table.append(ret1[i])
+        header=ret.getHeader()
+        header1=ret1.getHeader()
+        print header
+        print header1
+        relation=Relation(header)
+        if header[0]==header1[0]:
+            for i in ret:
+                relation.addRow(Row(i.getData(),i.getHeader()))
+            for i in ret1:
+                relation.addRow(Row(i.getData(),i.getHeader()))
         else:
             print "union incompatible error"
             return None
-        return table
+        return relation
 class Intersection:
     def __init__(self):
         self.__ancestor_left=None
         self.__ancestor_right=None
     def set(self,ancestor):
-        if(self.__ancestor_left==None):
+        if self.__ancestor_left is None:
             self.__ancestor_left=ancestor
         else:
             self.__ancestor_right=ancestor
     def execute(self):
         ret=self.__ancestor_left.execute()
         ret1=self.__ancestor_right.execute()
-        columns=ret[0]
-        columns1=ret1[0]
-        table=[]
-        if columns==columns1:
-           table.append(columns)
-           for i in range(1,len(ret)):
+        header=ret.getHeader()
+        header1=ret1.getHeader()
+        relation=Relation(header)
+        if header[0]==header1[0]:
+           for i in ret:
                try:
-                   ret1.index(ret[i])
-                   table.append(ret[i])
+                   ret1.getData().index(i.getData())
+                   relation.addRow(Row(i.getData(),i.getHeader()))
                except ValueError:
                    pass
         else:
             print "intersection incompatible error"
             return None
-        return table
+        return relation
 class Division:
     def __init__(self):
         self.__ancestor_left=None
         self.__ancestor_right=None
     def set(self,ancestor):
-        if(self.__ancestor_left==None):
+        if self.__ancestor_left is None:
             self.__ancestor_left=ancestor
         else:
             self.__ancestor_right=ancestor
@@ -241,11 +226,11 @@ class Division:
                 string2=""
                 for b in range(0,len(indexes)):
                     string2=string2+","+ret1[y][b]
-                if(string1==string2):
+                if string1==string2 :
                     string3=""
                     for c in range(0,len(indexes2)):
                         string3=string3+","+ret[i][c]
-                    if(match.get(string3)==None):
+                    if match.get(string3) is None :
                         new=[]
                         new.append(i)
                         new.append(1)
@@ -258,7 +243,7 @@ class Division:
         values=match.values()
         for i in range(0,len(values)):
             new=values[i]
-            if(new[1]==(len(ret1)-1)):
+            if new[1]==(len(ret1)-1):
                 row=new[0]
                 new1=[]
                 for y in range(0,len(indexes2)):
@@ -270,27 +255,26 @@ class Difference:
         self.__ancestor_left=None
         self.__ancestor_right=None
     def set(self,ancestor):
-        if(self.__ancestor_left==None):
+        if self.__ancestor_left is None :
             self.__ancestor_left=ancestor
         else:
             self.__ancestor_right=ancestor
     def execute(self):
         ret=self.__ancestor_left.execute()
         ret1=self.__ancestor_right.execute()
-        columns=ret[0]
-        columns1=ret1[0]
-        table=[]
-        table.append(columns)
-        if columns==columns1:
-            for i in range(1,len(ret)):
+        header=ret.getHeader()
+        header1=ret1.getHeader()
+        relation=Relation(header)
+        if header[0]==header1[0]:
+            for i in ret:
                 try:
-                    ret1.index(ret[i])
+                    ret1.getData().index(i.getData())
                 except ValueError:
-                    table.append(ret[i])
+                    relation.addRow(Row(i.getData(),i.getHeader()))
         else:
             print "difference error"
             return None
-        return table
+        return relation
 class Inner_Join:
     def __init__(self,column1,condition,column2):
         self.__ancestor_left=None
@@ -348,3 +332,54 @@ class Inner_Join:
                 if(self.condition(ret[i][index1],ret[y][index2])==True):
                     new=ret[i]+ret1[y]
                     table.append(new)
+def condition(column1,column2,condition):
+    if condition=="=" :
+        if column1 == column2:
+            return True
+        else :
+            return False
+    elif condition=="<":
+        if column1 == column2:
+            return True
+        else :
+            return False
+    elif condition==">":
+        if column1 == column2:
+            return True
+        else :
+            return False
+    elif condition==">=":
+        if column1 == column2:
+            return True
+        else :
+            return False
+    elif condition=="<=":
+        if column1 == column2:
+            return True
+        else :
+            return False
+    elif condition=="!=":
+        if column1 == column2:
+            return True
+        else :
+            return False
+    elif condition=="LIKE":
+        regex=column2.replace(".","\\.\\")
+        regex=regex.replace("*","\\*\\")
+        regex=regex.replace("_",".")
+        regex=regex.replace("%",".*")
+        a=re.match(regex,column1)
+        if a is not None :
+            return True
+        else:
+            return False
+    elif condition=="NOT LIKE" :
+        regex=column2.replace(".","\\.\\")
+        regex=regex.replace("*","\\*\\")
+        regex=regex.replace("_",".")
+        regex=regex.replace("%",".*")
+        a=re.match(regex,column1)
+        if a is None :
+            return True
+        else:
+            return False
