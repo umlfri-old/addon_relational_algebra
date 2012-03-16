@@ -64,7 +64,7 @@ class Projection:
                 except ValueError:
                     return None
 
-        #create new header with selected columns
+        #vytvori novy header so stlpcami, ktore selectujeme
         for i in range(len(header[0])-1,-1,-1):
             try:
                 indexes.index(i)
@@ -72,7 +72,7 @@ class Projection:
                 del header[0][i]
                 del header[1][i]
         relation=Relation(header)
-        #edit each row(delete columns which arent selected)
+        #upravi kazdy riadok(vymaze stlpce ktore sme neselectovali)
         for row in ret:
             for i in range(row.getLen()-1,-1,-1):
                 try:
@@ -86,6 +86,7 @@ class Selection:
     def __init__(self,column,condition,data):
         self.__column=column
         self.__condition=condition
+        #zisti ci podmienka je cislo ak nie je odstrani prvu a poslednu uvodzovku a vytvori novy string
         try:
             self.__data=float(data)
         except ValueError:
@@ -101,6 +102,7 @@ class Selection:
     def execute(self):
         ret=self.__ancestor.execute()
         header=ret.getHeader()
+        #zisti ci sa ziadany stlpec nachadza v danej relacii
         try:
             index=header[0].index(self.__column)
         except ValueError:
@@ -110,6 +112,8 @@ class Selection:
                 print "selection error"
                 return None
         relation=Relation(header)
+        #prejde vsetkymi riadkami relacie a zisti ci vyhovuje podmienke
+        #ak ano tak riadok prida do novej relacie
         for i in ret:
             if condition(i.getData(index),self.__data,self.__condition):
                 relation.addRow(Row(i.getData(),i.getHeader()))
@@ -129,9 +133,11 @@ class Product:
         header=ret.getHeader()
         header1=ret1.getHeader()
         header_new=[[],[]]
+        #hlavicky oboch relacii spoji do novej hlavicky
         header_new[0]=header[0]+header1[0]
         header_new[1]=header1[1]+header1[1]
         relation=Relation(header_new)
+        #prejde vsetkymi riadkami relacie a skombinuje ich s riadkami relacie1 a prida do novej relacie
         for i in ret:
             for y in ret1:
                 new=i.getData()+y.getData()
@@ -151,9 +157,9 @@ class Union:
         ret1=self.__ancestor_right.execute()
         header=ret.getHeader()
         header1=ret1.getHeader()
-        print header
-        print header1
         relation=Relation(header)
+        #ak sa relacie rovnaju tak prejde vsetkymi riadkami relacie a prida ich do novej a potom prejde vsetkymi
+        #riadkami relacie1 a prida ich do novej
         if header[0]==header1[0]:
             for i in ret:
                 relation.addRow(Row(i.getData(),i.getHeader()))
@@ -178,6 +184,8 @@ class Intersection:
         header=ret.getHeader()
         header1=ret1.getHeader()
         relation=Relation(header)
+        #ak sa hlavicky oboch relacii rovnaju tak prejde vsetkymi riadkami relacie a zisti ci sa data nachadzaju
+        #aj v relacii1 ak ano tak riadok prida do novej relacie
         if header[0]==header1[0]:
            for i in ret:
                try:
@@ -201,55 +209,63 @@ class Division:
     def execute(self):
         ret=self.__ancestor_left.execute()
         ret1=self.__ancestor_right.execute()
-        columns=ret[0]
-        columns_help=columns
-        columns1=ret1[0]
-        table=[]
+        columns=ret.getHeader()
+        columns_help=copy.deepcopy(columns)
+        columns1=ret1.getHeader()
         indexes=[]
         indexes2=[]
         match={}
-        for i in range(0,len(columns1)):
+        #ulozi do premennej indexes cisla stlpcov, ktore treba delit
+        for i in range(0,len(columns1[0])):
             try:
-                indexes.append(columns.index(columns1[i]))
-                columns.remove(columns1[i])
+                indexes.append(columns[0].index(columns1[0][i]))
+                columns[0].remove(columns1[0][i])
+                del columns[1][indexes[-1]]
             except ValueError:
                 print "division error"
                 return None
-        table.append(columns)
-        for i in range(0,len(columns)):
-            indexes2.append(columns_help.index(columns[i]))
-        for i in range(1,len(ret)):
+        relation=Relation(columns)
+        #ulozi do premennej indexes2 cisla stlpcov, ktore ostanu vo vyslednej relacii
+        for i in range(0,len(columns[0])):
+            indexes2.append(columns_help[0].index(columns[0][i]))
+        #pre vsetky riadky v relacii zostavy string zo stlpcov, ktorymi delime, a ulozi do premennej match novy zaznam
+        #ak este zaznam neexistuje v premmenej matches alebo zvysi pocet najdenych zaznamov o jedna ak sa tam uz nachadza
+        for i in ret :
             string1=""
             for a in range(0,len(indexes)):
-                string1=string1+","+ret[i][indexes[a]]
-            for y in range(1,len(ret1)):
+                string1=string1+","+ i.getData(indexes[a])
+            for y in ret1:
                 string2=""
                 for b in range(0,len(indexes)):
-                    string2=string2+","+ret1[y][b]
-                if string1==string2 :
+                    string2=string2+","+y.getData(b)
+                if string1==string2:
                     string3=""
                     for c in range(0,len(indexes2)):
-                        string3=string3+","+ret[i][c]
+                        string3=string3+","+i.getData(indexes2[c])
                     if match.get(string3) is None :
-                        new=[]
-                        new.append(i)
-                        new.append(1)
+                        new= [string3, 1]
                         match[string3]=new
                     else:
                         new=match.get(string3)
                         number=new[1]
                         new[1]=number+1
                         match[string3]=new
+        #vyberie vsetky hodnoty
         values=match.values()
+        #pre vsetky hodnoty skontroluje, ktorej hodnoty sa pocet rovna poctu riadkov, ktorymi sme delili
+        #pre tu ktora vyhovuje rozdeli jej hodnotu podla ciarky na stlpce a vytvori novy Row s tymito hodnotami a nasledne
+        #prida do relacie
         for i in range(0,len(values)):
             new=values[i]
-            if new[1]==(len(ret1)-1):
+            if new[1]== ret1.getLen():
                 row=new[0]
-                new1=[]
-                for y in range(0,len(indexes2)):
-                    new1.append(ret[row][y])
-                table.append(new1)
-        return table
+                new1=row.rsplit(",")
+                row=[]
+                for y in range(0,len(new1)):
+                    if y is not 0:
+                        row.append(new1[y])
+                relation.addRow(Row(row,copy.deepcopy(columns)))
+        return relation
 class Difference:
     def __init__(self):
         self.__ancestor_left=None
@@ -265,7 +281,9 @@ class Difference:
         header=ret.getHeader()
         header1=ret1.getHeader()
         relation=Relation(header)
+        #zisti ci sa hlavicky rovnaju v oboch relaciach
         if header[0]==header1[0]:
+            #pre kazdy riadok relacie skusi najst zaznam v druhej relacii ak nenajde tak zaznam prida do novej relacie
             for i in ret:
                 try:
                     ret1.getData().index(i.getData())
@@ -275,63 +293,70 @@ class Difference:
             print "difference error"
             return None
         return relation
-class Inner_Join:
-    def __init__(self,column1,condition,column2):
+class Join:
+    def __init__(self,column1,condition,column2,left=False,right=False):
         self.__ancestor_left=None
         self.__ancestor_right=None
         self.__column1=column1
         self.__condition=condition
         self.__column2=column2
+        self.__right=right
+        self.__left=left
     def set(self,ancestor):
-        if(self.__ancestor_left==None):
+        if self.__ancestor_left is None:
             self.__ancestor_left=ancestor
         else:
             self.__ancestor_right=ancestor
-    def condition(self,column1,column2):
-        if(self.__condition=="="):
-            if(column1==column2):
-                return True
-            else:
-                return False
-        elif(self.__condition=="<"):
-            if(column1<column2):
-                return True
-            else:
-                return False
-        elif(self.__condition==">"):
-            if(column1>column2):
-                return True
-            else:
-                return False
-        elif(self.__condition=="<="):
-            if(column1<=column2):
-                return True
-            else:
-                return False
-        elif(self.__condition==">="):
-            if(column1>=column2):
-                return True
-            else:
-                return False
     def execute(self):
         ret=self.__ancestor_left.execute()
         ret1=self.__ancestor_right.execute()
-        columns=ret[0]
-        columns1=ret1[0]
-        try:
-            index1=columns.index(self.__column1)
-            index2=columns1.index(self.__column2)
-        except:
+        header=ret.getHeader()
+        header1=ret1.getHeader()
+        indexes1,indexes2=find(header,header1,self.__column1,self.__column2)
+        #skontroluje ci sa obidve stlpce nachadzaju v tabulkach a ci sa nachadzaju prave len raz
+        if len(indexes1)+len(indexes2) != 2:
             print "inner join error"
-            return
-        new_columns=columns+columns1
-        table=[]
-        table.append(new_columns)
-        for i in range(1,len(ret)):
-            for y in range(1,len(ret1)):
-                if(self.condition(ret[i][index1],ret[y][index2])==True):
-                    new=ret[i]+ret1[y]
-                    table.append(new)
+            return None
+        if len(indexes1) is 2:
+            #obidva stlpce su z druhej tabulky
+            print "inner join error"
+            return None
+        elif len(indexes2) is 2:
+            #obidva stlpce su z druhej tabulky
+            print "inner join error"
+            return None
+        else:
+            #jeden stlpec z jednej tabulky, druhy stlpec z druhej tabulky
+            used=set()
+            new_columns=[[],[]]
+            new_columns[0]=header[0]+header1[0]
+            new_columns[1]=header[1]+header1[1]
+            relation=Relation(new_columns)
+            for i in ret:
+                number=0
+                for y in ret1:
+                    if condition(i.getData(indexes1[0]),y.getData(indexes2[0]),self.__condition):
+                        new=i.getData()+y.getData()
+                        relation.addRow(Row(new,copy.deepcopy(new_columns)))
+                        number +=1
+                        if self.__right:
+                            used.add(y.getString())
+                if number is 0 and self.__left:
+                    new1=[]
+                    for row in range(0,len(header1[0])):
+                        new1.append("")
+                    new=i.getData()+new1
+                    relation.addRow(Row(new,copy.deepcopy(new_columns)))
+            if self.__right:
+                for y in ret1:
+                    string=y.getString()
+                    if string not in used:
+                        new1=[]
+                        for row in range(0,len(header[0])):
+                            new1.append("")
+                        new=new1+y.getData()
+                        relation.addRow(Row(new,copy.deepcopy(new_columns)))
+        return relation
 def condition(column1,column2,condition):
     if condition=="=" :
         if column1 == column2:
@@ -339,27 +364,27 @@ def condition(column1,column2,condition):
         else :
             return False
     elif condition=="<":
-        if column1 == column2:
+        if column1 < column2:
             return True
         else :
             return False
     elif condition==">":
-        if column1 == column2:
+        if column1 > column2:
             return True
         else :
             return False
     elif condition==">=":
-        if column1 == column2:
+        if column1 >= column2:
             return True
         else :
             return False
     elif condition=="<=":
-        if column1 == column2:
+        if column1 <= column2:
             return True
         else :
             return False
     elif condition=="!=":
-        if column1 == column2:
+        if column1 != column2:
             return True
         else :
             return False
@@ -383,3 +408,39 @@ def condition(column1,column2,condition):
             return True
         else:
             return False
+def find(header1,header2,column1,column2):
+    indexes1=[]
+    indexes2=[]
+    try:
+        indexes1.append(header1[0].index(column1))
+    except ValueError:
+        pass
+    try:
+        indexes1.append(header1[1].index(column1))
+    except ValueError:
+        pass
+    try:
+        indexes1.append(header1[0].index(column2))
+    except ValueError:
+        pass
+    try:
+        indexes1.append(header1[1].index(column2))
+    except ValueError:
+        pass
+    try:
+        indexes2.append(header2[0].index(column1))
+    except ValueError:
+        pass
+    try:
+        indexes2.append(header2[1].index(column1))
+    except ValueError:
+        pass
+    try:
+        indexes2.append(header2[0].index(column2))
+    except ValueError:
+        pass
+    try:
+        indexes2.append(header2[1].index(column2))
+    except ValueError:
+        pass
+    return indexes1,indexes2
