@@ -18,3 +18,8 @@ class Row:
         return self.__header
     def getLen(self):
         return len(self.__data)
+    def getString(self):
+        string=""
+        for i in self.__data:
+            string=string+i+" "
+        return string

@@ -149,13 +149,13 @@ class DRA:
         elif name=="Projection":
             object=Projection(trunk.object.values["c"])
         elif name=="Inner join":
-            object=Inner_Join(trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"])
+            object=Join(trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"])
         elif name=="Left outter join":
-            pass
+            object=Join(trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"],True)
         elif name=="Right outter join":
-            pass
+            object=Join(trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"],right=True)
         elif name=="Full outter join":
-            pass
+            object=Join(trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"],True,True)
         else:
             self.__connection_Select=True
         if (self.__connection_Select==False):

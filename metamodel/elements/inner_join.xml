@@ -19,10 +19,10 @@
                         <VBox>
                             <TextBox text="#self.column1" font="Arial 10"/>
                             <Padding left="1">
-                                <TextBox text="#self.condition" font="Arial 10"></TextBox>
+                                <TextBox text="#self.condition" font="Arial 10"/>
                             </Padding>
                                 <Padding left="1" right="15">
-                                    <TextBox text="#self.column2" font="Arial 10"></TextBox>
+                                    <TextBox text="#self.column2" font="Arial 10" />
                                 </Padding>
                             </VBox>
                         </Padding>
