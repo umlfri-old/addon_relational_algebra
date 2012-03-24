@@ -1,19 +1,4 @@
- 
-#!/usr/bin/python
-
-# ZetCode PyGTK tutorial 
-#
-# This example shows a TreeView widget
-# in a list view mode
-#
-# author: jan bodnar
-# website: zetcode.com 
-# last edited: February 2009
-
-
 import gtk
-
-
 
 class PyApp(gtk.Window):
     def __init__(self,data):

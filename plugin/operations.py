@@ -2,28 +2,19 @@ import re
 import copy
 from relation import *
 from row import *
+from error import *
+
 class Table:
     def __init__(self,data,table):
         self.__database=data
         self.__table_name=table
     def execute(self):
         #return name of columns and store into variable header
-        cursor=self.__database.vykonaj('SHOW COLUMNS IN ' +self.__table_name)
-        #variable to store columns name with their table name
-        header=[[],[]]
-        i=0
-        for row in cursor:
-            for column in row:
-                if i is 0:
-                    header[0].append(column)
-                    str=self.__table_name+"."+column
-                    header[1].append(str)
-                i += 1
-            i=0
+        header=self.__database.getColumns(self.__table_name)
         #create new relation with columns name
         relation=Relation(header)
         #return data from table
-        data=self.__database.dajData(self.__table_name)
+        data=self.__database.getData(self.__table_name)
         tem=list(data)
         #from all data create class row with columns name(columns name with their table name) and with data and add to relation
         for i in range(0,len(tem)):
