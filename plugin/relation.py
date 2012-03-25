@@ -1,10 +1,13 @@
 class Relation:
-    def __init__(self,header):
+    def __init__(self,header,name):
         self.__header=header
+        self.__name=name
         self.__rows=[]
     def __iter__(self):
         for i in self.__rows:
             yield i
+    def getName(self):
+        return self.__name
     def addRow(self,row):
         self.__rows.append(row)
     def getHeader(self):

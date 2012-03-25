@@ -1,7 +1,5 @@
 #!/usr/bin/python
 from org.umlfri.api.mainLoops import GtkMainLoop
-from gtk.gdk import WindowTypeHint
-import MySQLdb
 from connect import *
 from operations import *
 from list import *
@@ -109,6 +107,7 @@ class DRA:
         a = self.__interface.current_diagram.selected
         tem=list(a)
         c=Connection()
+        o=None
         if c.getTyp()!= "":
             if len(tem) == 1:
                 select=tem.pop()
@@ -116,11 +115,8 @@ class DRA:
                     object=self.create(select)
                     o=object.execute()
                 except CompileError as error:
-                    attention=InfoBarDemo("Execute error",error.getValue(),"Warning")
-
-                if o is None:
-                    attention=InfoBarDemo("Execute error","Empty result","Warning")
-                else:
+                    attention=InfoBarDemo(error.getName(),error.getValue(),"Warning")
+                if o is not None:
                     PyApp(o)
                     gtk.main()
             else:
@@ -133,29 +129,29 @@ class DRA:
             a=Connection()
             object=Table(a,trunk.object.values["name"])
         elif name=="Union":
-            object=Union()
+            object=Union(trunk.object.values["name"])
         elif name=="Intersection":
-            object=Intersection()
+            object=Intersection(trunk.object.values["name"])
         elif name=="Product":
-            object=Product()
+            object=Product(trunk.object.values["name"])
         elif name=="Difference":
-            object=Difference()
+            object=Difference(trunk.object.values["name"])
         elif name=="Division":
-            object=Division()
+            object=Division(trunk.object.values["name"])
         elif name=="Selection":
-            object=Selection(trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"])
+            object=Selection(trunk.object.values["name"],trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"])
         elif name=="Projection":
-            object=Projection(trunk.object.values["c"])
+            object=Projection(trunk.object.values["name"],trunk.object.values["c"])
         elif name=="Inner join":
-            object=Join(trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"])
+            object=Join(trunk.object.values["name"],trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"])
         elif name=="Left outter join":
-            object=Join(trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"],True)
+            object=Join(trunk.object.values["name"],trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"],True)
         elif name=="Right outter join":
-            object=Join(trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"],right=True)
+            object=Join(trunk.object.values["name"],trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"],right=True)
         elif name=="Full outter join":
-            object=Join(trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"],True,True)
+            object=Join(trunk.object.values["name"],trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"],True,True)
         else:
-            raise CompileError("You cannot select connection")
+            raise CompileError("You cannot select connection","Compile error")
         if ob is not None:
             ob.set(object)
         connections=trunk.connections
@@ -169,7 +165,7 @@ class DRA:
             object1_position=object1.position
             corner=math.atan2(source_position[1]-object1_position[1],source_position[0]-object1_position[0])
             if corner<0:
-                raise CompileError("Wrong orientation of diagram")
+                raise CompileError("Wrong orientation of diagram","Compile error")
             if left_object is None:
                 left_object=object1
                 if len(list_connection)!=1:
