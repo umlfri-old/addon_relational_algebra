@@ -19,7 +19,7 @@ class PyApp(gtk.Window):
         self.set_position(gtk.WIN_POS_CENTER)
         
         self.connect("destroy", gtk.main_quit)
-        self.set_title("Result")
+        self.set_title("Result of "+self.__data.getName())
 
         vbox = gtk.VBox(False, 8)
         

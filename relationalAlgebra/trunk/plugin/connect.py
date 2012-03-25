@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import MySQLdb
 import paramiko
-from error import *
+
 
 def Singleton(cls):
     instance = {}
@@ -17,10 +17,10 @@ class Connection:
         self.__typ=""
         self.__type=[]
     def pripoj(self,druh):
-        if druh == 0:
+        if druh is 0:
             self.__database= MySQLdb.connect(host="localhost",user="root",passwd="maxik8245",db="cars")
             self.__typ="mysql"
-        elif druh == 1:
+        elif druh is 1:
             #pripojenie na oracle
             self.__database = paramiko.SSHClient()
             self.__database.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -33,7 +33,7 @@ class Connection:
             while line!="SQL> #~#~#~#~#~#~#~#~#\n":
                 line=self.__stdout.readline()
             self.__typ="oracle"
-        elif druh == 2:
+        elif druh is 2:
             #pripojenie na postreSQL
             self.__typ="postgreSQL"
         else:
@@ -70,7 +70,7 @@ class Connection:
                 #1-type integer
                 #2-type float
                 if "INTEGER" in type or "NUMBER" in type:
-                    type_column=1
+                    pass
                 self.__type.append(type)
                 name_column=' '.join(name_column.split())
                 header[0].append(name_column)

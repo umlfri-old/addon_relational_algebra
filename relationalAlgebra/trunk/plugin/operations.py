@@ -12,7 +12,7 @@ class Table:
         #return name of columns and store into variable header
         header=self.__database.getColumns(self.__table_name)
         #create new relation with columns name
-        relation=Relation(header)
+        relation=Relation(header,self.__table_name)
         #return data from table
         data=self.__database.getData(self.__table_name)
         tem=list(data)
@@ -26,9 +26,10 @@ class Table:
             relation.addRow(Row(new,header1))
         return relation
 class Projection:
-    def __init__(self,data):
+    def __init__(self,name,data):
         #attribute to store name of columns,which are selected from relation
         self.__data=[]
+        self.__name=name
         a=data.rsplit(":")
         for i in range(1,len(a)):
             b=a[i].rsplit("'")
@@ -53,8 +54,7 @@ class Projection:
                     index=header[1].index(self.__data[i])
                     indexes.append(index)
                 except ValueError:
-                    return None
-
+                    raise CompileError(self.__data[i]+" not found in table","Projection error in "+self.__name)
         #vytvori novy header so stlpcami, ktore selectujeme
         for i in range(len(header[0])-1,-1,-1):
             try:
@@ -62,7 +62,7 @@ class Projection:
             except ValueError:
                 del header[0][i]
                 del header[1][i]
-        relation=Relation(header)
+        relation=Relation(header,self.__name)
         #upravi kazdy riadok(vymaze stlpce ktore sme neselectovali)
         for row in ret:
             for i in range(row.getLen()-1,-1,-1):
@@ -72,45 +72,76 @@ class Projection:
                     row.deleteColumn(i)
             relation.addRow(row)
         return relation
-
 class Selection:
-    def __init__(self,column,condition,data):
+    def __init__(self,name,column,condition,data):
         self.__column=column
+        self.__name=name
         self.__condition=condition
-        #zisti ci podmienka je cislo ak nie je odstrani prvu a poslednu uvodzovku a vytvori novy string
-        try:
-            self.__data=float(data)
-        except ValueError:
-            self.__data=""
-            if(data[0]=='"') and (data[-1]=='"') or (data[0]=="'" and data[-1]=="'"):
-                for i in range(0,len(data)):
-                    if (i!=0)&(i!=(len(data)-1)):
-                        self.__data=self.__data+data[i]
-            else:
-                print "data error"
+        self.__data=data
     def set(self,ancestor):
         self.__ancestor=ancestor
     def execute(self):
         ret=self.__ancestor.execute()
         header=ret.getHeader()
-        #zisti ci sa ziadany stlpec nachadza v danej relacii
-        try:
-            index=header[0].index(self.__column)
-        except ValueError:
-            try:
-                index=header[1].index(self.__column)
-            except ValueError:
-                print "selection error"
-                return None
-        relation=Relation(header)
+        relation=Relation(header,self.__name)
+        index=[]
+        index1=check(self.__column,header,self.__name)
+        index2=check(self.__data,header,self.__name)
+        self.__column=""
+        self.__data=""
+        if type(index1) is str or type(index1) is float:
+            self.__column=index1
+        elif type(index1) is int:
+            index.append(index1)
+        if type(index2) is str or type(index2) is float:
+            self.__data=index2
+        elif type(index2) is int:
+            index.append(index2)
         #prejde vsetkymi riadkami relacie a zisti ci vyhovuje podmienke
         #ak ano tak riadok prida do novej relacie
-        for i in ret:
-            if condition(i.getData(index),self.__data,self.__condition):
-                relation.addRow(Row(i.getData(),i.getHeader()))
-        return relation
+        if len(index)==2:
+            for i in ret:
+                if condition(i.getData(index[0]),i.getData(index[1]),self.__condition,self.__name):
+                    relation.addRow(Row(i.getData(),i.getHeader()))
+            return relation
+        elif self.__column=="" and self.__data!="":
+            for i in ret:
+                if condition(i.getData(index[0]),self.__data,self.__condition,self.__name):
+                    relation.addRow(Row(i.getData(),i.getHeader()))
+            return relation
+        elif self.__column!="" and self.__data=="":
+            for i in ret:
+                if condition(self.__column,i.getData(index[0]),self.__condition,self.__name):
+                    relation.addRow(Row(i.getData(),i.getHeader()))
+            return relation
+        else:
+            for i in ret:
+                if condition(self.__column,self.__data,self.__condition,self.__name):
+                    relation.addRow(Row(i.getData(),i.getHeader()))
+            return relation
+def check(column,header,name):
+    #zisti ci stlpec je string, cislo alebo odkaz na stlpec
+    if(column[0]=='"') and (column[-1]=='"') or (column[0]=="'" and column[-1]=="'"):
+        column1=""
+        for i in range(0,len(column)):
+            if (i!=0)&(i!=(len(column)-1)):
+                column1=column1+column[i]
+        return column1
+    else:
+        try:
+            index=header[0].index(column)
+        except ValueError:
+            try:
+                index=header[1].index(column)
+            except ValueError:
+                try:
+                    index=float(column)
+                except ValueError:
+                    raise CompileError(column+" is not valid","Selection error in "+name)
+        return index
 class Product:
-    def __init__(self):
+    def __init__(self,name):
+        self.__name=name
         self.__ancestor_left=None
         self.__ancestor_right=None
     def set(self,ancestor):
@@ -127,7 +158,7 @@ class Product:
         #hlavicky oboch relacii spoji do novej hlavicky
         header_new[0]=header[0]+header1[0]
         header_new[1]=header1[1]+header1[1]
-        relation=Relation(header_new)
+        relation=Relation(header_new,self.__name)
         #prejde vsetkymi riadkami relacie a skombinuje ich s riadkami relacie1 a prida do novej relacie
         for i in ret:
             for y in ret1:
@@ -135,7 +166,8 @@ class Product:
                 relation.addRow(Row(new,copy.deepcopy(header_new)))
         return relation
 class Union:
-    def __init__(self):
+    def __init__(self,name):
+        self.__name=name
         self.__ancestor_left=None
         self.__ancestor_right=None
     def set(self,ancestor):
@@ -148,7 +180,7 @@ class Union:
         ret1=self.__ancestor_right.execute()
         header=ret.getHeader()
         header1=ret1.getHeader()
-        relation=Relation(header)
+        relation=Relation(header,self.__name)
         #ak sa relacie rovnaju tak prejde vsetkymi riadkami relacie a prida ich do novej a potom prejde vsetkymi
         #riadkami relacie1 a prida ich do novej
         if header[0]==header1[0]:
@@ -157,11 +189,11 @@ class Union:
             for i in ret1:
                 relation.addRow(Row(i.getData(),i.getHeader()))
         else:
-            print "union incompatible error"
-            return None
+            raise CompileError("Columns`s names in tables are different","Union error in"+self.__name)
         return relation
 class Intersection:
-    def __init__(self):
+    def __init__(self,name):
+        self.__name=name
         self.__ancestor_left=None
         self.__ancestor_right=None
     def set(self,ancestor):
@@ -174,7 +206,7 @@ class Intersection:
         ret1=self.__ancestor_right.execute()
         header=ret.getHeader()
         header1=ret1.getHeader()
-        relation=Relation(header)
+        relation=Relation(header,self.__name)
         #ak sa hlavicky oboch relacii rovnaju tak prejde vsetkymi riadkami relacie a zisti ci sa data nachadzaju
         #aj v relacii1 ak ano tak riadok prida do novej relacie
         if header[0]==header1[0]:
@@ -185,11 +217,11 @@ class Intersection:
                except ValueError:
                    pass
         else:
-            print "intersection incompatible error"
-            return None
+            raise CompileError("Columns`s names in tables are different","Intersection error in "+self.__name)
         return relation
 class Division:
-    def __init__(self):
+    def __init__(self,name):
+        self.__name=name
         self.__ancestor_left=None
         self.__ancestor_right=None
     def set(self,ancestor):
@@ -213,9 +245,8 @@ class Division:
                 columns[0].remove(columns1[0][i])
                 del columns[1][indexes[-1]]
             except ValueError:
-                print "division error"
-                return None
-        relation=Relation(columns)
+                raise CompileError("Columns`s names are not founded in table","Division error in "+self.__name)
+        relation=Relation(columns,self.__name)
         #ulozi do premennej indexes2 cisla stlpcov, ktore ostanu vo vyslednej relacii
         for i in range(0,len(columns[0])):
             indexes2.append(columns_help[0].index(columns[0][i]))
@@ -258,7 +289,8 @@ class Division:
                 relation.addRow(Row(row,copy.deepcopy(columns)))
         return relation
 class Difference:
-    def __init__(self):
+    def __init__(self,name):
+        self.__name=name
         self.__ancestor_left=None
         self.__ancestor_right=None
     def set(self,ancestor):
@@ -271,7 +303,7 @@ class Difference:
         ret1=self.__ancestor_right.execute()
         header=ret.getHeader()
         header1=ret1.getHeader()
-        relation=Relation(header)
+        relation=Relation(header,self.__name)
         #zisti ci sa hlavicky rovnaju v oboch relaciach
         if header[0]==header1[0]:
             #pre kazdy riadok relacie skusi najst zaznam v druhej relacii ak nenajde tak zaznam prida do novej relacie
@@ -281,11 +313,11 @@ class Difference:
                 except ValueError:
                     relation.addRow(Row(i.getData(),i.getHeader()))
         else:
-            print "difference error"
-            return None
+            raise CompileError("Columns`s names in tables are different","Difference error in "+self.__name)
         return relation
 class Join:
-    def __init__(self,column1,condition,column2,left=False,right=False):
+    def __init__(self,name,column1,condition,column2,left=False,right=False):
+        self.__name=name
         self.__ancestor_left=None
         self.__ancestor_right=None
         self.__column1=column1
@@ -293,6 +325,14 @@ class Join:
         self.__column2=column2
         self.__right=right
         self.__left=left
+        if right:
+            self.__type="Right outter join"
+        elif left:
+            self.__type="Left outter join"
+        elif right and left:
+            self.__type="Full outter join"
+        else:
+            self.__type="Inner join"
     def set(self,ancestor):
         if self.__ancestor_left is None:
             self.__ancestor_left=ancestor
@@ -306,27 +346,24 @@ class Join:
         indexes1,indexes2=find(header,header1,self.__column1,self.__column2)
         #skontroluje ci sa obidve stlpce nachadzaju v tabulkach a ci sa nachadzaju prave len raz
         if len(indexes1)+len(indexes2) != 2:
-            print "inner join error"
-            return None
+            raise CompileError("Columns`s names are not unique",self.__type+" error in "+self.__name)
         if len(indexes1) is 2:
-            #obidva stlpce su z druhej tabulky
-            print "inner join error"
-            return None
+            #obidva stlpce su z prvej tabulky
+            raise CompileError("Both of names are from first table",self.__type+" error in "+self.__name)
         elif len(indexes2) is 2:
             #obidva stlpce su z druhej tabulky
-            print "inner join error"
-            return None
+            raise CompileError("Both of names are from second table",self.__type+" error in "+self.__name)
         else:
             #jeden stlpec z jednej tabulky, druhy stlpec z druhej tabulky
             used=set()
             new_columns=[[],[]]
             new_columns[0]=header[0]+header1[0]
             new_columns[1]=header[1]+header1[1]
-            relation=Relation(new_columns)
+            relation=Relation(new_columns,self.__name)
             for i in ret:
                 number=0
                 for y in ret1:
-                    if condition(i.getData(indexes1[0]),y.getData(indexes2[0]),self.__condition):
+                    if condition(i.getData(indexes1[0]),y.getData(indexes2[0]),self.__condition,self.__name):
                         new=i.getData()+y.getData()
                         relation.addRow(Row(new,copy.deepcopy(new_columns)))
                         number +=1
@@ -348,7 +385,25 @@ class Join:
                         new=new1+y.getData()
                         relation.addRow(Row(new,copy.deepcopy(new_columns)))
         return relation
-def condition(column1,column2,condition):
+def checkType(column):
+    if type(column) is str:
+        typ="string"
+        return typ
+    try:
+        float(column)
+        typ="number"
+    except ValueError:
+        try:
+            str(column)
+            typ="string"
+        except ValueError:
+            typ=column+"unknown"
+    return typ
+def condition(column1,column2,condition,name):
+    type1=checkType(column1)
+    type2=checkType(column2)
+    if type1!=type2:
+        raise CompileError("Types of columns are different","Selection error in "+name)
     if condition=="=" :
         if column1 == column2:
             return True
