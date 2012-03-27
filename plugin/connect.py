@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import MySQLdb
 import paramiko
+import psycopg2
 
 
 def Singleton(cls):
@@ -16,16 +17,21 @@ class Connection:
     def __init__(self):
         self.__typ=""
         self.__type=[]
-    def pripoj(self,druh):
-        if druh is 0:
-            self.__database= MySQLdb.connect(host="localhost",user="root",passwd="maxik8245",db="cars")
+    def connect(self,host1,database1,user1,password1,type,user2=None,password2=None):
+        if type is 0:
+            self.__database= MySQLdb.connect(host=host1,user=user1,passwd=password1,db=database1)
             self.__typ="mysql"
-        elif druh is 1:
+        elif type is 1:
             #pripojenie na oracle
             self.__database = paramiko.SSHClient()
             self.__database.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            self.__database.connect('fra208d.fri.uniza.sk', username='belas',password='maxik8245')
-            self.__stdin,self.__stdout,self.__stderr=self.__database.exec_command('bash -l -c "sqlplus belas/maxik8245@orcl"')
+            self.__database.connect(host1, username=user1,password=password1)
+            if user2 is None:
+                command='bash -l -c "sqlplus '+user1+"/"+password1+"@orcl\""
+            else:
+                command='bash -l -c "sqlplus '+user2+"/"+password2+"@orcl\""
+            print command
+            self.__stdin,self.__stdout,self.__stderr=self.__database.exec_command(command)
             self.__stdin.write('col c new_value cnv;\n')
             self.__stdin.write('select chr(10) c from dual;\n')
             self.__stdin.write('set sqlprompt "#~#~#~#~#~#~#~#~# cnv";\n')
@@ -33,8 +39,9 @@ class Connection:
             while line!="SQL> #~#~#~#~#~#~#~#~#\n":
                 line=self.__stdout.readline()
             self.__typ="oracle"
-        elif druh is 2:
+        elif type is 2:
             #pripojenie na postreSQL
+            self.__database=psycopg2.connect(host=host1,database=database1,user=user1,password=password1)
             self.__typ="postgreSQL"
         else:
             print "Nespravne pripojenie"
@@ -78,7 +85,10 @@ class Connection:
                 header[1].append(str)
             return header
         else:
-            prikaz="SHOW COLUMNS IN "+table+";"
+            if self.__typ=="postgreSQL":
+                prikaz="SELECT column_name FROM information_schema.columns WHERE table_name ="+"'"+table+"';"
+            else:
+                prikaz="SHOW COLUMNS IN "+table+";"
             cursor=self.__database.cursor()
             cursor.execute(prikaz)
             header=[[],[]]

@@ -38,12 +38,19 @@ class DRA:
         self.__gtkBuilder=gtk.Builder()
         self.__gtkBuilder.add_from_file("share\\addons\\DRA\\plugin\\menu.glade")
         self.__menuConnect=self.__gtkBuilder.get_object("window1")
+        self.__hbox6=self.__gtkBuilder.get_object("hbox6")
+        self.__hbox7=self.__gtkBuilder.get_object("hbox7")
+        self.__hbox8=self.__gtkBuilder.get_object("hbox8")
+        self.__database=self.__gtkBuilder.get_object("entry2")
+        self.__check=self.__gtkBuilder.get_object("checkbutton1")
         store = gtk.ListStore(str)
         store.append (["MySQL"])
         store.append (["Oracle"])
         store.append (["PostgreSQL"])
         self.__combobox=self.__gtkBuilder.get_object("combobox1")
         self.__combobox.set_model(store)
+        self.__check.connect("toggled",lambda z:self.check())
+        self.__combobox.connect("changed",lambda z:self.oracle())
         cell = gtk.CellRendererText()
         self.__combobox.pack_start(cell, True)
         self.__combobox.add_attribute(cell, 'text',0)
@@ -53,6 +60,39 @@ class DRA:
         cancel_button=self.__gtkBuilder.get_object("button2")
         connect_button.connect("clicked",lambda x:self.connect())
         cancel_button.connect("clicked",lambda y:self.cancel())
+    def check(self):
+        if self.__check.get_active():
+            entry=self.__gtkBuilder.get_object("entry5")
+            entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#E6E6E6"))
+            entry.set_editable(False)
+            entry=self.__gtkBuilder.get_object("entry6")
+            entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#E6E6E6"))
+            entry.set_editable(False)
+        else:
+            entry=self.__gtkBuilder.get_object("entry5")
+            entry.set_editable(True)
+            entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#FFFFFF"))
+            entry=self.__gtkBuilder.get_object("entry6")
+            entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#FFFFFF"))
+            entry.set_editable(True)
+
+    def oracle(self):
+        type=self.__combobox.get_active()
+        if type is 1:
+            self.__hbox6.show()
+            self.__hbox7.show()
+            self.__hbox8.show()
+            self.__database.set_editable(False)
+            self.__database.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#E6E6E6"))
+        else:
+            self.__hbox6.hide()
+            self.__hbox7.hide()
+            self.__hbox8.hide()
+            self.__menuConnect.resize(310,150)
+            self.__database.set_editable(True)
+            self.__database.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#FFFFFF"))
+
+
     def cancel(self):
         self.__menuConnect.hide()
     def connect(self):
@@ -60,6 +100,9 @@ class DRA:
         database=self.__gtkBuilder.get_object("entry2").get_text()
         user=self.__gtkBuilder.get_object("entry3").get_text()
         password=self.__gtkBuilder.get_object("entry4").get_text()
+        user1=self.__gtkBuilder.get_object("entry5").get_text()
+        password1=self.__gtkBuilder.get_object("entry6").get_text()
+        check=self.__check.get_active()
         type=self.__combobox.get_active()
         if type==-1:
             self.__menuConnect.show()
@@ -67,7 +110,7 @@ class DRA:
         elif host=="":
             self.__menuConnect.show()
             attention=InfoBarDemo("Connect error","You must type host name","Warning")
-        elif database=="":
+        elif database=="" and type!=1:
             self.__menuConnect.show()
             attention=InfoBarDemo("Connect error","You must type name of database","Warning")
         elif user=="":
@@ -76,10 +119,19 @@ class DRA:
         elif password=="":
             self.__menuConnect.show()
             attention=InfoBarDemo("Connect error","You must type password","Warning")
+        elif check == False and type==1 and user1=="":
+            self.__menuConnect.show()
+            attention=InfoBarDemo("Connect error","You must type user name for database or use check button for using same login info","Warning")
+        elif check == False and type==1 and password1=="":
+            self.__menuConnect.show()
+            attention=InfoBarDemo("Connect error","You must type password for database or use check button for using same login info","Warning")
         else:
             try:
                 a=Connection()
-                a.pripoj(type)
+                if type==1 and check==False:
+                    a.connect(host,database,user,password,type,user1,password1)
+                else:
+                    a.connect(host,database,user,password,type)
                 self.__menuConnect.hide()
                 menu=self.__submenu.items
                 for m in menu:

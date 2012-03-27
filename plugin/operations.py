@@ -356,6 +356,14 @@ class Join:
         else:
             #jeden stlpec z jednej tabulky, druhy stlpec z druhej tabulky
             used=set()
+            opo=False
+            try:
+                header[0].index(self.__column1)
+            except ValueError:
+                try:
+                    header[1].index(self.__column1)
+                except ValueError:
+                    opo=True
             new_columns=[[],[]]
             new_columns[0]=header[0]+header1[0]
             new_columns[1]=header[1]+header1[1]
@@ -363,7 +371,13 @@ class Join:
             for i in ret:
                 number=0
                 for y in ret1:
-                    if condition(i.getData(indexes1[0]),y.getData(indexes2[0]),self.__condition,self.__name):
+                    if opo:
+                        left=y.getData(indexes2[0])
+                        right=i.getData(indexes1[0])
+                    else:
+                        left=i.getData(indexes1[0])
+                        right=y.getData(indexes2[0])
+                    if condition(left,right,self.__condition,self.__name):
                         new=i.getData()+y.getData()
                         relation.addRow(Row(new,copy.deepcopy(new_columns)))
                         number +=1
