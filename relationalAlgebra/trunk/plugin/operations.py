@@ -8,6 +8,8 @@ class Table:
     def __init__(self,data,table):
         self.__database=data
         self.__table_name=table
+        if table=="":
+            raise CompileError("Table error. You must type name of table","Compile error")
     def execute(self):
         #return name of columns and store into variable header
         header=self.__database.getColumns(self.__table_name)
@@ -29,6 +31,8 @@ class Projection:
     def __init__(self,name,data):
         #attribute to store name of columns,which are selected from relation
         self.__data=[]
+        if data=="":
+            raise CompileError("Projection error in "+ name+". You must enter names of columns, which you want select","Compile error")
         self.__name=name
         a=data.rsplit(":")
         for i in range(1,len(a)):
@@ -74,9 +78,15 @@ class Projection:
         return relation
 class Selection:
     def __init__(self,name,column,condition,data):
+        if column=="":
+            raise CompileError("Selection error in "+ name+". You must enter names of columns1","Compile error")
         self.__column=column
         self.__name=name
+        if condition==" ":
+            raise CompileError("Projection error in "+ name+". You must enter condition, which you want select","Compile error")
         self.__condition=condition
+        if data=="":
+            raise CompileError("Projection error in "+ name+". You must enter names of columns2","Compile error")
         self.__data=data
     def set(self,ancestor):
         self.__ancestor=ancestor
@@ -318,6 +328,10 @@ class Difference:
 class Join:
     def __init__(self,name,column1,condition,column2,left=False,right=False):
         self.__name=name
+        if column1=="" and column2=="" and condition==" ":
+            self.__natural=True
+        else:
+            self.__natural=False
         self.__ancestor_left=None
         self.__ancestor_right=None
         self.__column1=column1
@@ -331,8 +345,17 @@ class Join:
             self.__type="Left outter join"
         elif right and left:
             self.__type="Full outter join"
+        elif self.__natural:
+            self.__type="Natural join"
+            self.__condition="="
         else:
             self.__type="Inner join"
+        if not self.__natural and column1=="":
+            raise CompileError(self.__type+" error in "+ name+". You must enter names of columns1","Compile error")
+        if not self.__natural and condition==" ":
+            raise CompileError(self.__type+" error in "+ name+". You must enter condition","Compile error")
+        if not self.__natural and column2=="":
+            raise CompileError(self.__type+" error in "+ name+". You must enter names of columns2","Compile error")
     def set(self,ancestor):
         if self.__ancestor_left is None:
             self.__ancestor_left=ancestor
@@ -345,44 +368,81 @@ class Join:
         header1=ret1.getHeader()
         indexes1,indexes2=find(header,header1,self.__column1,self.__column2)
         #skontroluje ci sa obidve stlpce nachadzaju v tabulkach a ci sa nachadzaju prave len raz
-        if len(indexes1)+len(indexes2) != 2:
+        if len(indexes1)+len(indexes2) != 2 and not self.__natural:
             raise CompileError("Columns`s names are not unique",self.__type+" error in "+self.__name)
-        if len(indexes1) is 2:
+        if len(indexes1) is 2 and not self.__natural:
             #obidva stlpce su z prvej tabulky
             raise CompileError("Both of names are from first table",self.__type+" error in "+self.__name)
-        elif len(indexes2) is 2:
+        elif len(indexes2) is 2 and not self.__natural:
             #obidva stlpce su z druhej tabulky
             raise CompileError("Both of names are from second table",self.__type+" error in "+self.__name)
         else:
             #jeden stlpec z jednej tabulky, druhy stlpec z druhej tabulky
             used=set()
             opo=False
-            try:
-                header[0].index(self.__column1)
-            except ValueError:
-                try:
-                    header[1].index(self.__column1)
-                except ValueError:
-                    opo=True
             new_columns=[[],[]]
-            new_columns[0]=header[0]+header1[0]
-            new_columns[1]=header[1]+header1[1]
+            if not self.__natural:
+                try:
+                    header[0].index(self.__column1)
+                except ValueError:
+                    try:
+                        header[1].index(self.__column1)
+                    except ValueError:
+                        opo=True
+                new_columns[0]=header[0]+header1[0]
+                new_columns[1]=header[1]+header1[1]
+            else:
+                for i in range(0,len(header[0])):
+                    try:
+                        index=header1[0].index(header[0][i])
+                        try:
+                            indexes2.index(index)
+                            raise CompileError(self.__type + " error in "+ self.__name+". Tables have more columns with same name","Compile error")
+                        except ValueError:
+                            indexes1.append(i)
+                            indexes2.append(index)
+                    except ValueError:
+                        pass
+                new_columns[0]=header[0]
+                new_columns[1]=header[1]
+                for index in range(0,len(header1[0])):
+                    try:
+                        indexes2.index(index)
+                    except ValueError:
+                        new_columns[0].append(header1[0][index])
+                        new_columns[1].append(header1[1][index])
+            if len(indexes1) is 0:
+                raise CompileError(self.__type + " error in "+ self.__name+ ". Tables haven`t got any same columns","Compile error")
             relation=Relation(new_columns,self.__name)
             for i in ret:
                 number=0
                 for y in ret1:
-                    if opo:
-                        left=y.getData(indexes2[0])
-                        right=i.getData(indexes1[0])
-                    else:
-                        left=i.getData(indexes1[0])
-                        right=y.getData(indexes2[0])
-                    if condition(left,right,self.__condition,self.__name):
-                        new=i.getData()+y.getData()
-                        relation.addRow(Row(new,copy.deepcopy(new_columns)))
-                        number +=1
-                        if self.__right:
-                            used.add(y.getString())
+                    previous=True
+                    for index in range(0,len(indexes1)):
+                        if opo:
+                            left=y.getData(indexes2[index])
+                            right=i.getData(indexes1[index])
+                        else:
+                            left=i.getData(indexes1[index])
+                            right=y.getData(indexes2[index])
+                        if condition(left,right,self.__condition,self.__name) and previous:
+                            if index is len(indexes1)-1:
+                                if not self.__natural:
+                                    new=i.getData()+y.getData()
+                                else:
+                                    new1=[]
+                                    for index in range(0,y.getLen()):
+                                        try:
+                                            indexes2.index(index)
+                                        except ValueError:
+                                            new1.append(y.getData(index))
+                                    new=i.getData()+new1
+                                relation.addRow(Row(new,copy.deepcopy(new_columns)))
+                                number +=1
+                                if self.__right:
+                                    used.add(y.getString())
+                        else:
+                            previous=False
                 if number is 0 and self.__left:
                     new1=[]
                     for row in range(0,len(header1[0])):
