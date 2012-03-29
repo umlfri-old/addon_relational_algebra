@@ -13,7 +13,10 @@ class Relation:
     def getHeader(self):
         return self.__header
     def getColumnsName(self):
-        return self.__header[0]
+        header=[]
+        for column in self.__header:
+            header.append(column[0])
+        return header
     def getLen(self):
         return len(self.__rows)
     def getData(self,i=None,y=None):

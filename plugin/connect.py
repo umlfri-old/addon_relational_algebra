@@ -25,12 +25,11 @@ class Connection:
             #pripojenie na oracle
             self.__database = paramiko.SSHClient()
             self.__database.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            self.__database.connect(host1, username=user1,password=password1)
             if user2 is None:
-                command='bash -l -c "sqlplus '+user1+"/"+password1+"@orcl\""
+                self.__database.connect(host1, username=user1,password=password1)
             else:
-                command='bash -l -c "sqlplus '+user2+"/"+password2+"@orcl\""
-            print command
+                self.__database.connect(host1, username=user2,password=password2)
+            command='bash -l -c "sqlplus '+user1+"/"+password1+"@orcl\""
             self.__stdin,self.__stdout,self.__stderr=self.__database.exec_command(command)
             self.__stdin.write('col c new_value cnv;\n')
             self.__stdin.write('select chr(10) c from dual;\n')
@@ -69,8 +68,9 @@ class Connection:
                     i +=1
                 names.append([line[i],line[-1]])
                 del lines[0]
-            header=[[],[]]
+            header=[]
             for name in names:
+                new=[]
                 name_column=name[0]
                 type=name[1]
                 #0-type string
@@ -80,9 +80,10 @@ class Connection:
                     pass
                 self.__type.append(type)
                 name_column=' '.join(name_column.split())
-                header[0].append(name_column)
+                new.append(name_column)
                 str=table+"."+name_column
-                header[1].append(str)
+                new.append(str)
+                header.append(new)
             return header
         else:
             if self.__typ=="postgreSQL":
@@ -91,15 +92,17 @@ class Connection:
                 prikaz="SHOW COLUMNS IN "+table+";"
             cursor=self.__database.cursor()
             cursor.execute(prikaz)
-            header=[[],[]]
+            header=[]
             i=0
             for row in cursor:
+                new=[]
                 for column in row:
                     if i is 0:
-                        header[0].append(column)
+                        new.append(column)
                         str=table+"."+column
-                        header[1].append(str)
+                        new.append(str)
                     i += 1
+                header.append(new)
                 i=0
             return header
     def getData(self,table):

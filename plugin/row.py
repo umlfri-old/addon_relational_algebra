@@ -12,8 +12,7 @@ class Row:
             return self.__data[i]
     def deleteColumn(self,column):
         del self.__data[column]
-        del self.__header[0][column]
-        del self.__header[1][column]
+        del self.__header[column]
     def getHeader(self):
         return self.__header
     def getLen(self):
