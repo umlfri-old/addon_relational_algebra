@@ -121,10 +121,10 @@ class DRA:
             attention=InfoBarDemo("Connect error","You must type password","Warning")
         elif check == False and type==1 and user1=="":
             self.__menuConnect.show()
-            attention=InfoBarDemo("Connect error","You must type user name for database or use check button for using same login info","Warning")
+            attention=InfoBarDemo("Connect error","You must type user name for server or use check button for using same login info","Warning")
         elif check == False and type==1 and password1=="":
             self.__menuConnect.show()
-            attention=InfoBarDemo("Connect error","You must type password for database or use check button for using same login info","Warning")
+            attention=InfoBarDemo("Connect error","You must type password for server or use check button for using same login info","Warning")
         else:
             try:
                 a=Connection()
