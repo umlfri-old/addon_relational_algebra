@@ -2,7 +2,7 @@
 import MySQLdb
 import paramiko
 import psycopg2
-
+import re
 
 def Singleton(cls):
     instance = {}
@@ -37,6 +37,22 @@ class Connection:
             line=self.__stdout.readline()
             while line!="SQL> #~#~#~#~#~#~#~#~#\n":
                 line=self.__stdout.readline()
+            self.__stdin.write('set pages 0;\n')
+            line=self.__stdout.readline()
+            while line!="#~#~#~#~#~#~#~#~#\n":
+                line=self.__stdout.readline()
+            self.__stdin.write('set recsep ea;\n')
+            line=self.__stdout.readline()
+            while line!="#~#~#~#~#~#~#~#~#\n":
+                line=self.__stdout.readline()
+            self.__stdin.write('set space 10;\n')
+            line=self.__stdout.readline()
+            while line!="#~#~#~#~#~#~#~#~#\n":
+                line=self.__stdout.readline()
+            self.__stdin.write('set tab on;\n')
+            line=self.__stdout.readline()
+            while line!="#~#~#~#~#~#~#~#~#\n":
+                line=self.__stdout.readline()
             self.__typ="oracle"
         elif type is 2:
             #pripojenie na postreSQL
@@ -49,6 +65,7 @@ class Connection:
     def getTyp(self):
         return self.__typ
     def getColumns(self,table):
+        self.__type=[]
         if self.__typ=="oracle":
             prikaz="desc " + table+";\n"
             self.__stdin.write(prikaz)
@@ -72,12 +89,13 @@ class Connection:
             for name in names:
                 new=[]
                 name_column=name[0]
-                type=name[1]
+                type=name[-1]
                 #0-type string
-                #1-type integer
-                #2-type float
+                #1-type number
                 if "INTEGER" in type or "NUMBER" in type:
-                    pass
+                    type=1
+                else:
+                    type=0
                 self.__type.append(type)
                 name_column=' '.join(name_column.split())
                 new.append(name_column)
@@ -106,14 +124,29 @@ class Connection:
                 i=0
             return header
     def getData(self,table):
-        prikaz="SELECT * FROM "+table+";"
-        if self.__database=="oracle":
+        prikaz="SELECT * FROM "+table+";\n"
+        if self.__typ=="oracle":
             self.__stdin.write(prikaz)
             line=self.__stdout.readline()
-            if line=="/n":
-                pass
-            else:
-                raise Exception
+            lines=[]
+            while line!="#~#~#~#~#~#~#~#~#\n":
+                lines.append(line)
+                line=self.__stdout.readline()
+            data=[]
+            print lines
+            i=-1
+            end=False
+            while not end:
+                i +=1
+                string=""
+                while lines[i]!="\n":
+                    string=string+"\t"+lines[i]
+                    i +=1
+                data.append(string)
+                if lines[i+1]=="\n":
+                    end=True
+
+            print data
         else:
             cursor=self.__database.cursor()
             cursor.execute(prikaz)
