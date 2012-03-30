@@ -46,8 +46,6 @@ class PyApp(gtk.Window):
         for i in self.__data:
             new=[]
             for column in i:
-                if column=="`":
-                    column=" "
                 new.append(column)
             store.append(new)
         return store

@@ -21,12 +21,8 @@ class Table:
         #from all data create class row with columns name(columns name with their table name) and with data and add to relation
         for i in range(0,len(tem)):
             new=[]
-            for y in range(0,len(header)):
-                if tem[i][y]=='':
-                    item='`'
-                else:
-                    item=tem[i][y]
-                new.append(item)
+            for y in range(0,len(tem[i])):
+                new.append(tem[i][y])
             header1=copy.deepcopy(header)
             relation.addRow(Row(new,header1))
         return relation
