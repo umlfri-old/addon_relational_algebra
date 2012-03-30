@@ -42,10 +42,6 @@ class Connection:
             line=self.__stdout.readline()
             while line!="#~#~#~#~#~#~#~#~#\n":
                 line=self.__stdout.readline()
-            self.__stdin.write('set null `;\n')
-            line=self.__stdout.readline()
-            while line!="#~#~#~#~#~#~#~#~#\n":
-                line=self.__stdout.readline()
             self.__stdin.write('set recsep ea;\n')
             line=self.__stdout.readline()
             while line!="#~#~#~#~#~#~#~#~#\n":
@@ -55,6 +51,10 @@ class Connection:
             while line!="#~#~#~#~#~#~#~#~#\n":
                 line=self.__stdout.readline()
             self.__stdin.write('set tab on;\n')
+            line=self.__stdout.readline()
+            while line!="#~#~#~#~#~#~#~#~#\n":
+                line=self.__stdout.readline()
+            self.__stdin.write('set colsep ||;\n')
             line=self.__stdout.readline()
             while line!="#~#~#~#~#~#~#~#~#\n":
                 line=self.__stdout.readline()
@@ -129,7 +129,6 @@ class Connection:
                 i=0
             return header
     def getData(self,table):
-        print self.__type
         prikaz="SELECT * FROM "+table+";\n"
         if self.__typ=="oracle":
             self.__stdin.write(prikaz)
@@ -139,31 +138,28 @@ class Connection:
                 lines.append(line)
                 line=self.__stdout.readline()
             data=[]
-            print lines
             i=-1
             end=False
             while not end:
                 i +=1
                 string=""
                 while lines[i]!="\n":
-                    string=string+"\t"+lines[i]
+                    string=string+lines[i]
                     i +=1
                 data.append(string)
                 if lines[i+1]=="\n":
                     end=True
             cursor=[]
             for row in data:
+                row=row.replace("\n"," ||")
                 new=[]
-                columns=row.rsplit('\t')
+                columns=row.rsplit('||')
                 for i in range(len(columns)-1,-1,-1):
                     if columns[i]=="":
                         del columns[i]
-                print columns
                 for i in range(0,len(columns)):
                     column=' '.join(columns[i].split())
-                    if column=="`":
-                        column="`"
-                    elif self.__type[i] is 1:
+                    if self.__type[i] is 1 and column !="":
                         try:
                             column=int(column)
                         except ValueError:
