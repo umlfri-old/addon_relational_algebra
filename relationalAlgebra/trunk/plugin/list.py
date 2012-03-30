@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import gtk
 
 class PyApp(gtk.Window):
@@ -43,7 +44,12 @@ class PyApp(gtk.Window):
         store = gtk.ListStore(*([str] * len(self.__header)))
 
         for i in self.__data:
-            store.append(i.getData())
+            new=[]
+            for column in i:
+                if column=="`":
+                    column=" "
+                new.append(column)
+            store.append(new)
         return store
 
 

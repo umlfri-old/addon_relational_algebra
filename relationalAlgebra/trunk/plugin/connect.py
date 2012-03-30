@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 import MySQLdb
 import paramiko
 import psycopg2
@@ -38,6 +39,10 @@ class Connection:
             while line!="SQL> #~#~#~#~#~#~#~#~#\n":
                 line=self.__stdout.readline()
             self.__stdin.write('set pages 0;\n')
+            line=self.__stdout.readline()
+            while line!="#~#~#~#~#~#~#~#~#\n":
+                line=self.__stdout.readline()
+            self.__stdin.write('set null `;\n')
             line=self.__stdout.readline()
             while line!="#~#~#~#~#~#~#~#~#\n":
                 line=self.__stdout.readline()
@@ -124,6 +129,7 @@ class Connection:
                 i=0
             return header
     def getData(self,table):
+        print self.__type
         prikaz="SELECT * FROM "+table+";\n"
         if self.__typ=="oracle":
             self.__stdin.write(prikaz)
@@ -145,8 +151,29 @@ class Connection:
                 data.append(string)
                 if lines[i+1]=="\n":
                     end=True
-
-            print data
+            cursor=[]
+            for row in data:
+                new=[]
+                columns=row.rsplit('\t')
+                for i in range(len(columns)-1,-1,-1):
+                    if columns[i]=="":
+                        del columns[i]
+                print columns
+                for i in range(0,len(columns)):
+                    column=' '.join(columns[i].split())
+                    if column=="`":
+                        column="`"
+                    elif self.__type[i] is 1:
+                        try:
+                            column=int(column)
+                        except ValueError:
+                            try:
+                                column=float(column)
+                            except ValueError:
+                                raise ValueError
+                    new.append(column)
+                cursor.append(new)
+            return cursor
         else:
             cursor=self.__database.cursor()
             cursor.execute(prikaz)

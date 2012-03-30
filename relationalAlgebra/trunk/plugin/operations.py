@@ -22,7 +22,11 @@ class Table:
         for i in range(0,len(tem)):
             new=[]
             for y in range(0,len(header)):
-                new.append(tem[i][y])
+                if tem[i][y]=='':
+                    item='`'
+                else:
+                    item=tem[i][y]
+                new.append(item)
             header1=copy.deepcopy(header)
             relation.addRow(Row(new,header1))
         return relation
