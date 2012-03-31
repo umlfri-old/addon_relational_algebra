@@ -99,8 +99,8 @@ class Selection:
         index=[]
         index1=check(self.__column,header,self.__name)
         index2=check(self.__data,header,self.__name)
-        self.__column=""
-        self.__data=""
+        self.__column="~"
+        self.__data="~"
         if type(index1) is str or type(index1) is float:
             self.__column=index1
         elif type(index1) is int:
@@ -111,22 +111,28 @@ class Selection:
             index.append(index2)
         #prejde vsetkymi riadkami relacie a zisti ci vyhovuje podmienke
         #ak ano tak riadok prida do novej relacie
+        print index
+        print self.__column
         if len(index)==2:
+            print "prva"
             for i in ret:
                 if condition(i.getData(index[0]),i.getData(index[1]),self.__condition,self.__name):
                     relation.addRow(Row(i.getData(),i.getHeader()))
             return relation
-        elif self.__column=="" and self.__data!="":
+        elif len(index)==1 and self.__column=="~":
+            print "druha"
             for i in ret:
                 if condition(i.getData(index[0]),self.__data,self.__condition,self.__name):
                     relation.addRow(Row(i.getData(),i.getHeader()))
             return relation
-        elif self.__column!="" and self.__data=="":
+        elif len(index)==1 and self.__data=="~":
+            print "tretia"
             for i in ret:
                 if condition(self.__column,i.getData(index[0]),self.__condition,self.__name):
                     relation.addRow(Row(i.getData(),i.getHeader()))
             return relation
         else:
+            print "stvrta"
             for i in ret:
                 if condition(self.__column,self.__data,self.__condition,self.__name):
                     relation.addRow(Row(i.getData(),i.getHeader()))
@@ -138,6 +144,8 @@ def check(column,header,name):
         for i in range(0,len(column)):
             if (i!=0)&(i!=(len(column)-1)):
                 column1=column1+column[i]
+        if len(column1) is 0:
+            raise CompileError("Column name cannot be empty string","Selection error in "+name)
         return column1
     else:
         try:

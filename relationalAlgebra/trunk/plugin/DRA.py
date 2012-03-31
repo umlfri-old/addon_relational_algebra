@@ -141,9 +141,9 @@ class DRA:
                         m.visible=True
                     if m.gui_id=="execute":
                         m.enabled=True
-            except Exception:
+            except CompileError as e:
                 self.__menuConnect.show()
-                attention=InfoBarDemo("Connection error","Connect to database failed","Warning")
+                attention=InfoBarDemo(e.getName(),e.getValue(),"Warning")
     def disconnect(self):
         a=Connection()
         a.disconnect()
