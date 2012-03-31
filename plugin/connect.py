@@ -3,7 +3,7 @@
 import MySQLdb
 import paramiko
 import psycopg2
-import re
+from error import *
 
 def Singleton(cls):
     instance = {}
@@ -20,16 +20,36 @@ class Connection:
         self.__type=[]
     def connect(self,host1,database1,user1,password1,type,user2=None,password2=None):
         if type is 0:
-            self.__database= MySQLdb.connect(host=host1,user=user1,passwd=password1,db=database1)
+            try:
+                self.__database= MySQLdb.connect(host=host1,user=user1,passwd=password1,db=database1)
+            except MySQLdb.OperationalError as e:
+                raise CompileError(e.__str__(),"Connection error")
             self.__typ="mysql"
         elif type is 1:
             #pripojenie na oracle
             self.__database = paramiko.SSHClient()
             self.__database.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             if user2 is None:
-                self.__database.connect(host1, username=user1,password=password1)
+                try:
+                    self.__database.connect(host1, username=user1,password=password1)
+                except paramiko.AuthenticationException as e:
+                    raise CompileError(e.__str__()+ " Login or password to server is wrong","Connection error")
+                except Exception as e:
+                    if e.__str__()=="[Errno 11004] getaddrinfo failed":
+                        raise CompileError("Connect to database failed. Unknown server "+ host1,"Connection error")
+                    else:
+                        raise CompileError("Cannot connect to server","Connection error")
             else:
-                self.__database.connect(host1, username=user2,password=password2)
+                try:
+                    self.__database.connect(host1, username=user2,password=password2)
+                except paramiko.AuthenticationException as e:
+                    raise CompileError(e.__str__()+" Login or password to server is wrong","Connection error")
+                except Exception as e:
+                    if e.__str__()=="[Errno 11004] getaddrinfo failed":
+                        raise CompileError("Connect to database failed. Unknown server "+ host1,"Connection error")
+                    else:
+                        raise CompileError("Cannot connect to server","Connection error")
+
             command='bash -l -c "sqlplus '+user1+"/"+password1+"@orcl\""
             self.__stdin,self.__stdout,self.__stderr=self.__database.exec_command(command)
             self.__stdin.write('col c new_value cnv;\n')
@@ -37,6 +57,8 @@ class Connection:
             self.__stdin.write('set sqlprompt "#~#~#~#~#~#~#~#~# cnv";\n')
             line=self.__stdout.readline()
             while line!="SQL> #~#~#~#~#~#~#~#~#\n":
+                if line=="ERROR:\n":
+                    raise CompileError("Database authentication error. Login or password to database is wrong","Connection error")
                 line=self.__stdout.readline()
             self.__stdin.write('set pages 0;\n')
             line=self.__stdout.readline()
@@ -61,7 +83,10 @@ class Connection:
             self.__typ="oracle"
         elif type is 2:
             #pripojenie na postreSQL
-            self.__database=psycopg2.connect(host=host1,database=database1,user=user1,password=password1)
+            try:
+                self.__database=psycopg2.connect(host=host1,database=database1,user=user1,password=password1)
+            except psycopg2.OperationalError as e:
+                raise CompileError(e.__str__(),"Connection error")
             self.__typ="postgreSQL"
         else:
             print "Nespravne pripojenie"
@@ -140,6 +165,7 @@ class Connection:
             data=[]
             i=-1
             end=False
+            print lines
             while not end:
                 i +=1
                 string=""
@@ -150,8 +176,16 @@ class Connection:
                 if lines[i+1]=="\n":
                     end=True
             cursor=[]
+            row=data[0].replace("\n"," ||")
+            new=[]
+            columns=row.rsplit('||')
+            if len(columns)!=len(self.__type):
+                change=False
+            else:
+                change=True
             for row in data:
-                row=row.replace("\n"," ||")
+                if change:
+                    row=row.replace("\n"," ||")
                 new=[]
                 columns=row.rsplit('||')
                 for i in range(len(columns)-1,-1,-1):
