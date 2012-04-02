@@ -1,7 +1,6 @@
 class Row:
-    def __init__(self,data,header):
+    def __init__(self,data):
         self.__data=data
-        self.__header=header
     def __iter__(self):
         for i in self.__data:
             yield i
@@ -12,9 +11,6 @@ class Row:
             return self.__data[i]
     def deleteColumn(self,column):
         del self.__data[column]
-        del self.__header[column]
-    def getHeader(self):
-        return self.__header
     def getLen(self):
         return len(self.__data)
     def getString(self):

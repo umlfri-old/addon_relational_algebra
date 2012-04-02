@@ -21,7 +21,6 @@ class PyApp(gtk.Window):
         
         self.connect("destroy", gtk.main_quit)
         self.set_title("Result of "+self.__data.getName())
-
         vbox = gtk.VBox(False, 8)
         
         sw = gtk.ScrolledWindow()
@@ -37,7 +36,9 @@ class PyApp(gtk.Window):
         sw.add(treeView)
         self.create_columns(treeView)
         self.add(vbox)
+        self.activate_focus()
         self.show_all()
+
     def create_model(self):
         
         
