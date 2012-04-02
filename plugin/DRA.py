@@ -54,12 +54,12 @@ class DRA:
         cell = gtk.CellRendererText()
         self.__combobox.pack_start(cell, True)
         self.__combobox.add_attribute(cell, 'text',0)
-        self.__menuConnect.set_keep_above(True)
-        self.__menuConnect.show_all()
         connect_button=self.__gtkBuilder.get_object("button1")
         cancel_button=self.__gtkBuilder.get_object("button2")
         connect_button.connect("clicked",lambda x:self.connect())
         cancel_button.connect("clicked",lambda y:self.cancel())
+        self.__menuConnect.set_keep_above(True)
+        self.__menuConnect.show_all()
     def check(self):
         if self.__check.get_active():
             entry=self.__gtkBuilder.get_object("entry5")
@@ -144,6 +144,9 @@ class DRA:
             except CompileError as e:
                 self.__menuConnect.show()
                 attention=InfoBarDemo(e.getName(),e.getValue(),"Warning")
+            except Exception:
+                self.__menuConnect.show()
+                attention=InfoBarDemo("Connection error","Connect to database failed","Warning")
     def disconnect(self):
         a=Connection()
         a.disconnect()
@@ -253,31 +256,31 @@ class DRA:
             raise CompileError("You cannot select connection","Compile error")
         if ob is not None:
             ob.set(object)
-
-        source_position=trunk.position
-        left_object=None
-        right_object=None
-        for i in range(0,len(list_connection)):
-            conn=list_connection[i]
-            object1=conn.source
-            object1_position=object1.position
-            corner=math.atan2(source_position[1]-object1_position[1],source_position[0]-object1_position[0])
-            if corner<0:
-                raise CompileError("Wrong orientation of diagram","Compile error")
-            if left_object is None:
-                left_object=object1
-                if len(list_connection)!=1:
-                    conn2=list_connection[i+1]
-                    right_object=conn2.source
-            else:
-                left_object_position=left_object.position
-                if math.atan2(source_position[1]-left_object_position[1],source_position[0]-left_object_position[0])>corner:
-                    right_object=left_object
+        if len(list_connection) is not 0:
+            source_position=trunk.position
+            left_object=None
+            right_object=None
+            for i in range(0,len(list_connection)):
+                conn=list_connection[i]
+                object1=conn.source
+                object1_position=object1.position
+                corner=math.atan2(source_position[1]-object1_position[1],source_position[0]-object1_position[0])
+                if corner<0:
+                    raise CompileError("Wrong orientation of diagram","Compile error")
+                if left_object is None:
                     left_object=object1
-        if left_object.object.name != trunk.object.name:
-            self.create(left_object,object)
-        if right_object is not None:
-            if right_object.object.name != trunk.object.name:
-                self.create(right_object,object)
+                    if len(list_connection)!=1:
+                        conn2=list_connection[i+1]
+                        right_object=conn2.source
+                else:
+                    left_object_position=left_object.position
+                    if math.atan2(source_position[1]-left_object_position[1],source_position[0]-left_object_position[0])>corner:
+                        right_object=left_object
+                        left_object=object1
+            if left_object.object.name != trunk.object.name:
+                self.create(left_object,object)
+            if right_object is not None:
+                if right_object.object.name != trunk.object.name:
+                    self.create(right_object,object)
         if ob is None:
             return object

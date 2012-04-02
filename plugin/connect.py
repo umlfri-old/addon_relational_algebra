@@ -55,6 +55,11 @@ class Connection:
             self.__stdin.write('col c new_value cnv;\n')
             self.__stdin.write('select chr(10) c from dual;\n')
             self.__stdin.write('set sqlprompt "#~#~#~#~#~#~#~#~# cnv";\n')
+            if not self.__stdout.readline():
+                if "bash: sqlplus:" in self.__stderr.readline():
+                    raise CompileError("Oracle database not installed on server","Connection error")
+                else:
+                    raise CompileError("Connect to database failed","Connection error")
             line=self.__stdout.readline()
             while line!="SQL> #~#~#~#~#~#~#~#~#\n":
                 if line=="ERROR:\n":
@@ -102,6 +107,8 @@ class Connection:
             lines=[]
             names=[]
             line=self.__stdout.readline()
+            if line == "ERROR:\n":
+                raise CompileError("Table "+ table+" doesnt exist.","Compile error")
             while line!="#~#~#~#~#~#~#~#~#\n":
                 lines.append(line)
                 line=self.__stdout.readline()
@@ -142,9 +149,10 @@ class Connection:
             cursor.execute(prikaz)
             header=[]
             i=0
-            for row in cursor:
+            cursor=list(cursor)
+            for y in range(len(cursor)-1,-1,-1):
                 new=[]
-                for column in row:
+                for column in cursor[y]:
                     if i is 0:
                         new.append(column)
                         str=table+"."+column
@@ -165,7 +173,6 @@ class Connection:
             data=[]
             i=-1
             end=False
-            print lines
             while not end:
                 i +=1
                 string=""
@@ -176,16 +183,9 @@ class Connection:
                 if lines[i+1]=="\n":
                     end=True
             cursor=[]
-            row=data[0].replace("\n"," ||")
             new=[]
-            columns=row.rsplit('||')
-            if len(columns)!=len(self.__type):
-                change=False
-            else:
-                change=True
             for row in data:
-                if change:
-                    row=row.replace("\n"," ||")
+                row=row.replace("\n"," ||")
                 new=[]
                 columns=row.rsplit('||')
                 for i in range(len(columns)-1,-1,-1):
