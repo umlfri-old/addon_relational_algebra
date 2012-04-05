@@ -14,10 +14,22 @@ def Singleton(cls):
     return getinstance
 
 @Singleton
-class Connection:
+class Connection():
     def __init__(self):
         self.__typ=""
         self.__type=[]
+    #def connect(self,host1,database1,user1,password1,type,user2=None,password2=None):
+    #    self.__host=host1
+    #    self.__database=database1
+    #    self.__user=user1
+    #    self.__password=password1
+    #    self.__type=type
+    #    self.__user2=None
+    #    self.__password2=None
+    #    self.__password2=None
+    #    if user2 is not None:
+    #        self.__user2=user2
+    #        self.__password2=password2
     def connect(self,host1,database1,user1,password1,type,user2=None,password2=None):
         if type is 0:
             try:
@@ -41,7 +53,7 @@ class Connection:
                         raise CompileError("Cannot connect to server","Connection error")
             else:
                 try:
-                    self.__database.connect(host1, username=user2,password=password2)
+                    self.__database.connect(host1, user=user2,password=password2)
                 except paramiko.AuthenticationException as e:
                     raise CompileError(e.__str__()+" Login or password to server is wrong","Connection error")
                 except Exception as e:
@@ -49,14 +61,13 @@ class Connection:
                         raise CompileError("Connect to database failed. Unknown server "+ host1,"Connection error")
                     else:
                         raise CompileError("Cannot connect to server","Connection error")
-
             command='bash -l -c "sqlplus '+user1+"/"+password1+"@orcl\""
             self.__stdin,self.__stdout,self.__stderr=self.__database.exec_command(command)
             self.__stdin.write('col c new_value cnv;\n')
             self.__stdin.write('select chr(10) c from dual;\n')
             self.__stdin.write('set sqlprompt "#~#~#~#~#~#~#~#~# cnv";\n')
             if not self.__stdout.readline():
-                if "bash: sqlplus:" in self.__stderr.readline():
+                if "bash: sqlplus:" in self.__stderr.readlines():
                     raise CompileError("Oracle database not installed on server","Connection error")
                 else:
                     raise CompileError("Connect to database failed","Connection error")
@@ -89,7 +100,7 @@ class Connection:
         elif type is 2:
             #pripojenie na postreSQL
             try:
-                self.__database=psycopg2.connect(host=host1,database=database1,user=user1,password=password1)
+                self.__database=psycopg2.connect(host=host1,dbname=database1,user=user1,password=password1)
             except psycopg2.OperationalError as e:
                 raise CompileError(e.__str__(),"Connection error")
             self.__typ="postgreSQL"
@@ -97,6 +108,12 @@ class Connection:
             print "Nespravne pripojenie"
     def disconnect(self):
         self.__typ=""
+        self.__type=""
+        self.__password=""
+        self.__database=""
+        self.__user=""
+        self.__password2=""
+        self.__user2=""
     def getTyp(self):
         return self.__typ
     def getColumns(self,table):
