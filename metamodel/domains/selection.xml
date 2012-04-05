@@ -16,6 +16,8 @@
            <Value>!=</Value>
            <Value>LIKE</Value>
            <Value>NOT LIKE</Value>
+           <Value>IS</Value>
+           <Value>IS NOT</Value>
        </Enum>
    </Attribute>
 <Attribute id="column2" name="Column 2">

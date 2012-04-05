@@ -60,6 +60,18 @@ class DRA:
         cancel_button.connect("clicked",lambda y:self.cancel())
         self.__menuConnect.set_keep_above(True)
         self.__menuConnect.show_all()
+        self.__objectes=[]
+        self.__objectes.append(self.__gtkBuilder.get_object("accellabel1"))
+        self.__objectes.append(self.__gtkBuilder.get_object("checkbutton1"))
+        self.__objectes.append(self.__gtkBuilder.get_object("accellabel2"))
+        self.__objectes.append(self.__gtkBuilder.get_object("accellabel3"))
+        self.__objectes.append(self.__gtkBuilder.get_object("entry5"))
+        self.__objectes.append(self.__gtkBuilder.get_object("entry6"))
+        for object in self.__objectes:
+            object.hide()
+
+
+
     def check(self):
         if self.__check.get_active():
             entry=self.__gtkBuilder.get_object("entry5")
@@ -79,16 +91,13 @@ class DRA:
     def oracle(self):
         type=self.__combobox.get_active()
         if type is 1:
-            self.__hbox6.show()
-            self.__hbox7.show()
-            self.__hbox8.show()
+            for object in self.__objectes:
+                object.show()
             self.__database.set_editable(False)
             self.__database.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#E6E6E6"))
         else:
-            self.__hbox6.hide()
-            self.__hbox7.hide()
-            self.__hbox8.hide()
-            self.__menuConnect.resize(310,150)
+            for object in self.__objectes:
+                object.hide()
             self.__database.set_editable(True)
             self.__database.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#FFFFFF"))
 

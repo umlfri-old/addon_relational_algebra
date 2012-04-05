@@ -35,6 +35,10 @@ class Table:
         except psycopg2.ProgrammingError as e:
             raise CompileError(e.__str__(),"CompileError")
         tem=list(data)
+        for row in tem:
+            for column in row:
+                print type(column)
+                print column
         #from all data create class row with columns name(columns name with their table name) and with data and add to relation
         for i in range(0,len(tem)):
             new=[]
@@ -103,10 +107,13 @@ class Selection:
         self.__column=column
         self.__name=name
         if condition==" ":
-            raise CompileError("Projection error in "+ name+". You must enter condition, which you want select","Compile error")
+            raise CompileError("Selection error in "+ name+". You must enter condition, which you want select","Compile error")
         self.__condition=condition
         if data=="":
-            raise CompileError("Projection error in "+ name+". You must enter names of columns2","Compile error")
+            raise CompileError("Selection error in "+ name+". You must enter names of columns2","Compile error")
+        if condition=="IS" or condition == "IS NOT":
+            if data!="NULL" and column!="NULL":
+                raise CompileError("Selection error in "+ name+". If condition is '"+condition+"', You must compare with NULL value","Compile error")
         self.__data=data
     def set(self,ancestor):
         self.__ancestor=ancestor
@@ -132,33 +139,39 @@ class Selection:
         #ak ano tak riadok prida do novej relacie
         if len(index)==2:
             for i in ret:
-                if condition(i.getData(index[0]),i.getData(index[1]),self.__condition,self.__name):
+                if condition(i.getData(index[0]),i.getData(index[1]),0,self.__condition,self.__name):
                     relation.addRow(Row(i.getData()))
             return relation
         elif len(index)==1 and self.__column=="~":
             for i in ret:
-                if condition(i.getData(index[0]),self.__data,self.__condition,self.__name):
+                if condition(i.getData(index[0]),self.__data,1,self.__condition,self.__name):
                     relation.addRow(Row(i.getData()))
             return relation
         elif len(index)==1 and self.__data=="~":
             for i in ret:
-                if condition(self.__column,i.getData(index[0]),self.__condition,self.__name):
+                if condition(self.__column,i.getData(index[0]),2,self.__condition,self.__name):
                     relation.addRow(Row(i.getData()))
             return relation
         else:
             for i in ret:
-                if condition(self.__column,self.__data,self.__condition,self.__name):
+                if condition(self.__column,self.__data,0,self.__condition,self.__name):
                     relation.addRow(Row(i.getData()))
             return relation
 def check(column,header,name):
     #zisti ci stlpec je string, cislo alebo odkaz na stlpec
     if(column[0]=='"') and (column[-1]=='"') or (column[0]=="'" and column[-1]=="'"):
         column1=""
-        for i in range(0,len(column)):
-            if (i!=0)&(i!=(len(column)-1)):
-                column1=column1+column[i]
-        if len(column1) is 0:
-            raise CompileError("Column name cannot be empty string","Selection error in "+name)
+        if column=="NULL":
+            column1=""
+        else:
+            for i in range(0,len(column)):
+                if (i!=0)&(i!=(len(column)-1)):
+                    column1=column1+column[i]
+            if len(column1) is 0:
+                raise CompileError("Column name cannot be empty string","Selection error in "+name)
+        return column1
+    elif column=="NULL":
+        column1=""
         return column1
     else:
         try:
@@ -483,7 +496,7 @@ class Join:
                         else:
                             left=i.getData(indexes1[index])
                             right=y.getData(indexes2[index])
-                        if condition(left,right,self.__condition,self.__name) and previous:
+                        if condition(left,right,0,self.__condition,self.__name) and previous:
                             if index is len(indexes1)-1:
                                 if not self.__natural:
                                     new=i.getData()+y.getData()
@@ -531,7 +544,7 @@ def checkType(column):
         except ValueError:
             typ=column+"unknown"
     return typ
-def condition(column1,column2,condition,name):
+def condition(column1,column2,number,condition,name):
     type1=checkType(column1)
     type2=checkType(column2)
     if type1!=type2:
@@ -565,6 +578,33 @@ def condition(column1,column2,condition,name):
         if column1 != column2:
             return True
         else :
+            return False
+    elif condition=="IS":
+        print number
+        if number is 1:
+            if column1=="":
+                return True
+            else:
+                return False
+        elif number is 2:
+            if column2=="":
+                return True
+            else:
+                return False
+        else:
+            return False
+    elif condition == "IS NOT":
+        if number is 1:
+            if column1 !="":
+                return True
+            else:
+                return False
+        elif number is 2:
+            if column2 !="":
+                return True
+            else:
+                return False
+        else:
             return False
     elif condition=="LIKE":
         regex=column2.replace(".","\\.\\")
