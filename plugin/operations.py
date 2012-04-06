@@ -5,6 +5,7 @@ from row import *
 from error import *
 from MySQLdb import ProgrammingError
 import psycopg2
+import datetime,time
 
 class Table:
     def __init__(self,data,table):
@@ -35,10 +36,10 @@ class Table:
         except psycopg2.ProgrammingError as e:
             raise CompileError(e.__str__(),"CompileError")
         tem=list(data)
-        for row in tem:
-            for column in row:
-                print type(column)
-                print column
+        #for row in tem:
+        #    for column in row:
+        #        print type(column)
+        #        print column
         #from all data create class row with columns name(columns name with their table name) and with data and add to relation
         for i in range(0,len(tem)):
             new=[]
@@ -123,15 +124,19 @@ class Selection:
         table_names=ret.getTableNames()
         relation=Relation(header,self.__name,table_names)
         index=[]
-        index1=check(self.__column,header,self.__name)
-        index2=check(self.__data,header,self.__name)
+        if self.__condition == "IS" or self.__condition == "IS NOT":
+            condition1=1
+        else:
+            condition1=2
+        index1=check(self.__column,header,self.__name,condition1)
+        index2=check(self.__data,header,self.__name,condition1)
         self.__column="~"
         self.__data="~"
-        if type(index1) is str or type(index1) is float:
+        if type(index1) is str or type(index1) is float or index1 is None:
             self.__column=index1
         elif type(index1) is int:
             index.append(index1)
-        if type(index2) is str or type(index2) is float:
+        if type(index2) is str or type(index2) is float or index2 is None:
             self.__data=index2
         elif type(index2) is int:
             index.append(index2)
@@ -157,22 +162,22 @@ class Selection:
                 if condition(self.__column,self.__data,0,self.__condition,self.__name):
                     relation.addRow(Row(i.getData()))
             return relation
-def check(column,header,name):
+def check(column,header,name,condition1):
     #zisti ci stlpec je string, cislo alebo odkaz na stlpec
     if(column[0]=='"') and (column[-1]=='"') or (column[0]=="'" and column[-1]=="'"):
         column1=""
-        if column=="NULL":
-            column1=""
-        else:
-            for i in range(0,len(column)):
-                if (i!=0)&(i!=(len(column)-1)):
-                    column1=column1+column[i]
-            if len(column1) is 0:
-                raise CompileError("Column name cannot be empty string","Selection error in "+name)
+        for i in range(0,len(column)):
+            if (i!=0)&(i!=(len(column)-1)):
+                column1=column1+column[i]
+        if len(column1) is 0:
+            raise CompileError("Column name cannot be empty string","Selection error in "+name)
         return column1
     elif column=="NULL":
-        column1=""
-        return column1
+        if condition1==1:
+            column1=None
+            return column1
+        else:
+            raise CompileError("Column name cannot be 'NULL' without 'IS' or 'IS NOT' condition","Selection error in "+name)
     else:
         try:
             index=findElement(header,column)
@@ -531,13 +536,19 @@ class Join:
                         relation.addRow(Row(new))
         return relation
 def checkType(column):
+    if type(column) is datetime.datetime:
+        typ="datetime"
+        return typ
+    if type(column) is datetime.date:
+        typ="date"
+        return typ
     if type(column) is str:
         typ="string"
         return typ
     try:
         float(column)
         typ="number"
-    except ValueError:
+    except TypeError:
         try:
             str(column)
             typ="string"
@@ -545,10 +556,23 @@ def checkType(column):
             typ=column+"unknown"
     return typ
 def condition(column1,column2,number,condition,name):
-    type1=checkType(column1)
-    type2=checkType(column2)
-    if type1!=type2:
-        raise CompileError("Types of columns are different","Selection error in "+name)
+    if column1 is not None and column2 is not None:
+        type1=checkType(column1)
+        type2=checkType(column2)
+        if type1=="date" and (condition!="LIKE" or condition!="NOT LIKE" or condition!="IS" or condition!="IS NOT"):
+            time_format = "%d.%m.%Y %H:%M:%S"
+            try:
+                column1=datetime.datetime.fromtimestamp(time.mktime(time.strptime(column1, time_format)))
+            except ValueError:
+                raise CompileError("Date must be in format 'DD.MM.YYYY'. ","Selection error in "+name)
+        if type2=="date" and (condition!="LIKE" or condition!="NOT LIKE" or condition!="IS" or condition!="IS NOT"):
+            time_format = "%d.%m.%Y %H:%M:%S"
+            try:
+                column2=datetime.datetime.fromtimestamp(time.mktime(time.strptime(column2, time_format)))
+            except ValueError:
+                raise CompileError("Date must be in format 'DD.MM.YYYY'. ","Selection error in "+name)
+        if type1!=type2:
+            raise CompileError("Types of columns are different","Selection error in "+name)
     if condition=="=" :
         if column1 == column2:
             return True
@@ -580,14 +604,13 @@ def condition(column1,column2,number,condition,name):
         else :
             return False
     elif condition=="IS":
-        print number
         if number is 1:
-            if column1=="":
+            if column1 is None:
                 return True
             else:
                 return False
         elif number is 2:
-            if column2=="":
+            if column2 is None:
                 return True
             else:
                 return False
@@ -595,12 +618,12 @@ def condition(column1,column2,number,condition,name):
             return False
     elif condition == "IS NOT":
         if number is 1:
-            if column1 !="":
+            if column1 is not None:
                 return True
             else:
                 return False
         elif number is 2:
-            if column2 !="":
+            if column2 is not None:
                 return True
             else:
                 return False
@@ -611,7 +634,10 @@ def condition(column1,column2,number,condition,name):
         regex=regex.replace("*","\\*\\")
         regex=regex.replace("_",".")
         regex=regex.replace("%",".*")
-        a=re.match(regex,column1)
+        if type(column1) is datetime.datetime:
+            a=re.match(regex,column1.strftime("%d.%m.%Y %H:%M:%S"))
+        else:
+            a=re.match(regex,column1)
         if a is not None :
             return True
         else:
@@ -621,7 +647,10 @@ def condition(column1,column2,number,condition,name):
         regex=regex.replace("*","\\*\\")
         regex=regex.replace("_",".")
         regex=regex.replace("%",".*")
-        a=re.match(regex,column1)
+        if type(column1) is datetime.datetime:
+            a=re.match(regex,column1.strftime("%d.%m.%Y %H:%M:%S"))
+        else:
+            a=re.match(regex,column1)
         if a is None :
             return True
         else:

@@ -96,6 +96,10 @@ class Connection():
             line=self.__stdout.readline()
             while line!="#~#~#~#~#~#~#~#~#\n":
                 line=self.__stdout.readline()
+            self.__stdin.write('set linesize 32767 ||;\n')
+            line=self.__stdout.readline()
+            while line!="#~#~#~#~#~#~#~#~#\n":
+               line=self.__stdout.readline()
             self.__typ="oracle"
         elif type is 2:
             #pripojenie na postreSQL
@@ -133,7 +137,7 @@ class Connection():
             del lines[0]
             lines.remove("\n")
             while len(lines):
-                line=lines[0].rsplit(" ")
+                line=lines[0].rsplit("\t")
                 i=0
                 while line[i]=='':
                     i +=1
@@ -210,7 +214,9 @@ class Connection():
                         del columns[i]
                 for i in range(0,len(columns)):
                     column=' '.join(columns[i].split())
-                    if self.__type[i] is 1 and column !="":
+                    if column=="":
+                        column=None
+                    elif self.__type[i] is 1 and column !="":
                         try:
                             column=int(column)
                         except ValueError:
