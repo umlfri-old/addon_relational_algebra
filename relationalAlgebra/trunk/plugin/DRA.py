@@ -55,11 +55,7 @@ class DRA:
         cancel_button=self.__gtkBuilder.get_object("button2")
         connect_button.connect("clicked",lambda x:self.connect())
         cancel_button.connect("clicked",lambda y:self.cancel())
-
-        
         self.__menuConnect.set_keep_above(True)
-
-                
         self.__menuConnect.show_all()
         self.__objectes=[]
         self.__objectes.append(self.__gtkBuilder.get_object("accellabel1"))
@@ -68,9 +64,6 @@ class DRA:
         self.__objectes.append(self.__gtkBuilder.get_object("accellabel3"))
         self.__objectes.append(self.__gtkBuilder.get_object("entry5"))
         self.__objectes.append(self.__gtkBuilder.get_object("entry6"))
-        print self.__menuConnect.get_modal()
-
-
         for object in self.__objectes:
             object.hide()
     def check(self):
@@ -137,18 +130,12 @@ class DRA:
             attention=InfoBarDemo("Connect error","You must type password for server or use check button for using same login info","Warning")
         else:
             try:
-               
                 a=Connection()
                 if type==1 and check==False:
-
                     a.connect(host,database,user,password,type,user1,password1)
-
                 else:
-
                     a.connect(host,database,user,password,type)
-
                 self.__menuConnect.hide()
-
                 menu=self.__submenu.items
                 for m in menu:
                     if m.gui_id=="connect":
