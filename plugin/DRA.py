@@ -6,6 +6,7 @@ from list import *
 from attention import *
 import math
 from error import *
+import threading
 
 class DRA:
     def __init__(self,interface):
@@ -147,9 +148,11 @@ class DRA:
             except CompileError as e:
                 self.__menuConnect.show()
                 attention=InfoBarDemo(e.getName(),e.getValue(),"Warning")
-            except Exception:
+            except Exception as e:
+                print e
                 self.__menuConnect.show()
                 attention=InfoBarDemo("Connection error","Connect to database failed","Warning")
+            
     def disconnect(self):
         a=Connection()
         a.disconnect()
