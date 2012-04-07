@@ -6,6 +6,8 @@ from error import *
 from MySQLdb import ProgrammingError
 import psycopg2
 import datetime,time
+import dateutil.parser
+from datetime import timedelta
 
 class Table:
     def __init__(self,data,table):
@@ -124,19 +126,18 @@ class Selection:
         table_names=ret.getTableNames()
         relation=Relation(header,self.__name,table_names)
         index=[]
-        if self.__condition == "IS" or self.__condition == "IS NOT":
-            condition1=1
-        else:
-            condition1=2
-        index1=check(self.__column,header,self.__name,condition1)
-        index2=check(self.__data,header,self.__name,condition1)
+        index1=check(self.__column,header,self.__name,self.__condition)
+        index2=check(self.__data,header,self.__name,self.__condition)
+        if self.__condition == "LIKE" or self.__condition=="NOT LIKE":
+            if type(index1) is not str and type(index2) is not str:
+                raise CompileError("Condition 'LIKE' and 'NOT LIKE' can be use only with string","Selection error in "+self.__name)
         self.__column="~"
         self.__data="~"
-        if type(index1) is str or type(index1) is float or index1 is None:
+        if type(index1) is str or type(index1) is float or index1 is None or type(index1) is datetime.date or type(index1) is datetime.datetime:
             self.__column=index1
         elif type(index1) is int:
             index.append(index1)
-        if type(index2) is str or type(index2) is float or index2 is None:
+        if type(index2) is str or type(index2) is float or index2 is None or type(index2) is datetime.date or type(index2) is datetime.datetime:
             self.__data=index2
         elif type(index2) is int:
             index.append(index2)
@@ -173,7 +174,7 @@ def check(column,header,name,condition1):
             raise CompileError("Column name cannot be empty string","Selection error in "+name)
         return column1
     elif column=="NULL":
-        if condition1==1:
+        if condition1=="IS" or condition1=="IS NOT":
             column1=None
             return column1
         else:
@@ -185,7 +186,27 @@ def check(column,header,name,condition1):
             try:
                 index=float(column)
             except ValueError:
-                raise CompileError("Column name "+column+" is not valid","Selection error in "+name)
+                if condition1!="LIKE" or condition1!="NOT LIKE" or condition1!="IS" or condition1!="IS NOT":
+                    try:
+                        if ":" in column:
+                            try:
+                                index = dateutil.parser.parse(column)
+                                return index
+                            except ValueError:
+                                raise CompileError("Format of date is wrong","Selection error in "+name)
+                        else:
+                            try:
+                                index=dateutil.parser.parse(column).date()
+                                return index
+                            except ValueError:
+                                raise CompileError("Format of date is wrong","Selection error in "+name)
+                    except Exception:
+                        raise CompileError(column+" is not valid","Selection error in "+name)
+                else:
+                    if condition1=="IS" or condition1=="IS NOT":
+                        raise CompileError("Condition  'IS' and 'IS NOT' can be compare only with 'NULL'","Selection error in "+name)
+                    elif condition1=="LIKE" or condition1=="NOT LIKE":
+                        raise CompileError("Condition 'LIKE' and 'NOT LIKE' can be compare only with string","Selection error in "+name )
         return index
 class Product:
     def __init__(self,name):
@@ -555,55 +576,41 @@ def checkType(column):
         except ValueError:
             typ=column+"unknown"
     return typ
-def condition(column1,column2,number,condition,name):
-    if column1 is not None and column2 is not None:
-        type1=checkType(column1)
-        type2=checkType(column2)
-        if type1=="date" and (condition!="LIKE" or condition!="NOT LIKE" or condition!="IS" or condition!="IS NOT"):
-            time_format = "%d.%m.%Y %H:%M:%S"
-            try:
-                column1=datetime.datetime.fromtimestamp(time.mktime(time.strptime(column1, time_format)))
-            except ValueError:
-                raise CompileError("Date must be in format 'DD.MM.YYYY'. ","Selection error in "+name)
-        if type2=="date" and (condition!="LIKE" or condition!="NOT LIKE" or condition!="IS" or condition!="IS NOT"):
-            time_format = "%d.%m.%Y %H:%M:%S"
-            try:
-                column2=datetime.datetime.fromtimestamp(time.mktime(time.strptime(column2, time_format)))
-            except ValueError:
-                raise CompileError("Date must be in format 'DD.MM.YYYY'. ","Selection error in "+name)
-        if type1!=type2:
+def condition(column1,column2,number,condition1,name):
+    if (column1 is not None and column2 is not None) and (condition1 != "LIKE" and condition1 != "NOT LIKE"):
+        if type(column1)!=type(column2):
             raise CompileError("Types of columns are different","Selection error in "+name)
-    if condition=="=" :
+    if condition1=="=" :
         if column1 == column2:
             return True
         else :
             return False
-    elif condition=="<":
+    elif condition1=="<":
         if column1 < column2:
             return True
         else :
             return False
-    elif condition==">":
+    elif condition1==">":
         if column1 > column2:
             return True
         else :
             return False
-    elif condition==">=":
+    elif condition1==">=":
         if column1 >= column2:
             return True
         else :
             return False
-    elif condition=="<=":
+    elif condition1=="<=":
         if column1 <= column2:
             return True
         else :
             return False
-    elif condition=="!=":
+    elif condition1=="!=":
         if column1 != column2:
             return True
         else :
             return False
-    elif condition=="IS":
+    elif condition1=="IS":
         if number is 1:
             if column1 is None:
                 return True
@@ -616,7 +623,7 @@ def condition(column1,column2,number,condition,name):
                 return False
         else:
             return False
-    elif condition == "IS NOT":
+    elif condition1 == "IS NOT":
         if number is 1:
             if column1 is not None:
                 return True
@@ -629,29 +636,40 @@ def condition(column1,column2,number,condition,name):
                 return False
         else:
             return False
-    elif condition=="LIKE":
+    elif condition1=="LIKE":
         regex=column2.replace(".","\\.\\")
         regex=regex.replace("*","\\*\\")
         regex=regex.replace("_",".")
         regex=regex.replace("%",".*")
-        if type(column1) is datetime.datetime:
-            a=re.match(regex,column1.strftime("%d.%m.%Y %H:%M:%S"))
-        else:
-            a=re.match(regex,column1)
+        a=re.match(regex,column1.__str__())
         if a is not None :
             return True
         else:
             return False
-    elif condition=="NOT LIKE" :
+    elif condition1=="NOT LIKE" :
         regex=column2.replace(".","\\.\\")
         regex=regex.replace("*","\\*\\")
         regex=regex.replace("_",".")
         regex=regex.replace("%",".*")
-        if type(column1) is datetime.datetime:
-            a=re.match(regex,column1.strftime("%d.%m.%Y %H:%M:%S"))
-        else:
-            a=re.match(regex,column1)
+
+        a=re.match(regex,column1.__str__())
         if a is None :
             return True
         else:
             return False
+
+def parse_time(time_str):
+    regex = re.compile(r'((?P<days>\d+?)d)?((?P<hours>\d+?)hr)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?((?P<microseconds>\d+?)ms)?')
+    parts = regex.match(time_str)
+    if not parts:
+        return
+    parts = parts.groupdict()
+    print parts
+    time_params = {}
+    for (name, param) in parts.iteritems():
+        print name
+        if param:
+            time_params[name] = int(param)
+
+    return timedelta(**dict(( (key, value)
+                              for key, value in time_params.items() )))

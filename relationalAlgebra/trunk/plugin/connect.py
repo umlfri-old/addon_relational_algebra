@@ -4,7 +4,7 @@ import MySQLdb
 import paramiko
 import psycopg2
 from error import *
-
+import dateutil
 def Singleton(cls):
     instance = {}
     def getinstance():
@@ -18,18 +18,7 @@ class Connection():
     def __init__(self):
         self.__typ=""
         self.__type=[]
-    #def connect(self,host1,database1,user1,password1,type,user2=None,password2=None):
-    #    self.__host=host1
-    #    self.__database=database1
-    #    self.__user=user1
-    #    self.__password=password1
-    #    self.__type=type
-    #    self.__user2=None
-    #    self.__password2=None
-    #    self.__password2=None
-    #    if user2 is not None:
-    #        self.__user2=user2
-    #        self.__password2=password2
+
     def connect(self,host1,database1,user1,password1,type,user2=None,password2=None):
         if type is 0:
             try:
@@ -100,6 +89,14 @@ class Connection():
             line=self.__stdout.readline()
             while line!="#~#~#~#~#~#~#~#~#\n":
                line=self.__stdout.readline()
+            self.__stdin.write('alter session set NLS_TIMESTAMP_FORMAT="YYYY/MM/DD HH24:MI:SS:FF";\n')
+            line=self.__stdout.readline()
+            while line!="#~#~#~#~#~#~#~#~#\n":
+               line=self.__stdout.readline()
+            self.__stdin.write('alter session set NLS_DATE_FORMAT="YYYY/MM/DD";\n')
+            line=self.__stdout.readline()
+            while line!="#~#~#~#~#~#~#~#~#\n":
+               line=self.__stdout.readline()
             self.__typ="oracle"
         elif type is 2:
             #pripojenie na postreSQL
@@ -150,8 +147,20 @@ class Connection():
                 type=name[-1]
                 #0-type string
                 #1-type number
+                #2-date
+                #3-timestamp
+                #4-interval year-month
+                #5-interval day-seconds
                 if "INTEGER" in type or "NUMBER" in type:
                     type=1
+                elif "DATE" in type:
+                    type=2
+                elif "TIME" in type:
+                    type=3
+                elif "INTERVAL YEAR" in type:
+                    type=4
+                elif "INTERVAL DAY" in type:
+                    type=5
                 else:
                     type=0
                 self.__type.append(type)
@@ -216,7 +225,7 @@ class Connection():
                     column=' '.join(columns[i].split())
                     if column=="":
                         column=None
-                    elif self.__type[i] is 1 and column !="":
+                    elif self.__type[i] is 1:
                         try:
                             column=int(column)
                         except ValueError:
@@ -224,6 +233,10 @@ class Connection():
                                 column=float(column)
                             except ValueError:
                                 raise ValueError
+                    elif self.__type[i] is 2:
+                        column = dateutil.parser.parse(column).date()
+                    elif self.__type[i] is 3:
+                        column = dateutil.parser.parse(column)
                     new.append(column)
                 cursor.append(new)
             return cursor
