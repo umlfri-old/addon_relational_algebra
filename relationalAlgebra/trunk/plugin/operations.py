@@ -5,14 +5,15 @@ from row import *
 from error import *
 from MySQLdb import ProgrammingError
 import psycopg2
-import datetime,time
+import datetime
 import dateutil.parser
 from datetime import timedelta
+from dateutil.relativedelta import relativedelta
 
 class Table:
     def __init__(self,data,table):
         self.__database=data
-        self.__table_name=table
+        self.__table_name=table.lower()
         if table=="":
             raise CompileError("Table error. You must type name of table","Compile error")
     def execute(self):
@@ -27,7 +28,7 @@ class Table:
             raise CompileError(e.__str__(),"CompileError")
         table_name=[self.__table_name]
         #create new relation with columns name
-        relation=Relation(header,self.__table_name,table_name)
+        relation=Relation(header,self.__table_name)
         #return data from table
         try:
             data=self.__database.getData(self.__table_name)
@@ -60,7 +61,7 @@ class Projection:
         a=data.rsplit(":")
         for i in range(1,len(a)):
             b=a[i].rsplit("'")
-            self.__data.append(b[1])
+            self.__data.append(b[1].lower())
     def set(self,ancestor):
         self.__ancestor=ancestor
     def execute(self):
@@ -68,7 +69,6 @@ class Projection:
         ret=self.__ancestor.execute()
         #store header
         header=ret.getHeader()
-        table_names=ret.getTableNames()
         indexes=[]
         #find and store into indexes columns numbers, which are selected
         #at first try to search in header[0](represented columns name without table_name) and then try to search
@@ -85,7 +85,7 @@ class Projection:
                 indexes.index(i)
             except ValueError:
                 del header[i]
-        relation=Relation(header,self.__name,table_names)
+        relation=Relation(header,self.__name)
         #upravi kazdy riadok(vymaze stlpce ktore sme neselectovali)
         for row in ret:
             for i in range(row.getLen()-1,-1,-1):
@@ -123,8 +123,7 @@ class Selection:
     def execute(self):
         ret=self.__ancestor.execute()
         header=ret.getHeader()
-        table_names=ret.getTableNames()
-        relation=Relation(header,self.__name,table_names)
+        relation=Relation(header,self.__name)
         index=[]
         index1=check(self.__column,header,self.__name,self.__condition)
         index2=check(self.__data,header,self.__name,self.__condition)
@@ -133,11 +132,11 @@ class Selection:
                 raise CompileError("Condition 'LIKE' and 'NOT LIKE' can be use only with string","Selection error in "+self.__name)
         self.__column="~"
         self.__data="~"
-        if type(index1) is str or type(index1) is float or index1 is None or type(index1) is datetime.date or type(index1) is datetime.datetime:
+        if type(index1) is str or type(index1) is float or index1 is None or type(index1) is datetime.date or type(index1) is datetime.datetime or type(index1) is datetime.timedelta or isinstance(index1,relativedelta):
             self.__column=index1
         elif type(index1) is int:
             index.append(index1)
-        if type(index2) is str or type(index2) is float or index2 is None or type(index2) is datetime.date or type(index2) is datetime.datetime:
+        if type(index2) is str or type(index2) is float or index2 is None or type(index2) is datetime.date or type(index2) is datetime.datetime or type(index2) is datetime.timedelta or isinstance(index2,relativedelta):
             self.__data=index2
         elif type(index2) is int:
             index.append(index2)
@@ -181,27 +180,32 @@ def check(column,header,name,condition1):
             raise CompileError("Column name cannot be 'NULL' without 'IS' or 'IS NOT' condition","Selection error in "+name)
     else:
         try:
-            index=findElement(header,column)
+            index=findElement(header,column.lower())
         except ValueError:
             try:
                 index=float(column)
             except ValueError:
                 if condition1!="LIKE" or condition1!="NOT LIKE" or condition1!="IS" or condition1!="IS NOT":
-                    try:
-                        if ":" in column:
+                    if ":" in column:
+                        try:
+                            index = dateutil.parser.parse(column)
+                            return index
+                        except ValueError:
+                            raise CompileError("Format of date is wrong","Selection error in "+name)
+                    else:
+                        try:
+                            index=dateutil.parser.parse(column).date()
+                            return index
+                        except ValueError:
                             try:
-                                index = dateutil.parser.parse(column)
+                                index=parse_time(column)
                                 return index
                             except ValueError:
-                                raise CompileError("Format of date is wrong","Selection error in "+name)
-                        else:
-                            try:
-                                index=dateutil.parser.parse(column).date()
-                                return index
-                            except ValueError:
-                                raise CompileError("Format of date is wrong","Selection error in "+name)
-                    except Exception:
-                        raise CompileError(column+" is not valid","Selection error in "+name)
+                                try:
+                                    index=parse_time1(column)
+                                    return index
+                                except ValueError:
+                                    raise CompileError(column+ " is not valid. Value without quotes can be use only with number, date or interval(_d_hr_min_s_ms)","Selection error in "+name)
                 else:
                     if condition1=="IS" or condition1=="IS NOT":
                         raise CompileError("Condition  'IS' and 'IS NOT' can be compare only with 'NULL'","Selection error in "+name)
@@ -224,11 +228,9 @@ class Product:
         header=ret.getHeader()
         header1=ret1.getHeader()
         header_new=[]
-        table_name=ret.getTableNames()
-        table_name=table_name+ret.getTableNames()
         #hlavicky oboch relacii spoji do novej hlavicky
         header_new=header+header1
-        relation=Relation(header_new,self.__name,table_name)
+        relation=Relation(header_new,self.__name)
         #prejde vsetkymi riadkami relacie a skombinuje ich s riadkami relacie1 a prida do novej relacie
         for i in ret:
             for y in ret1:
@@ -252,12 +254,10 @@ class Union:
         columnsName1=ret1.getColumnsName()
         header=ret.getHeader()
         header1=ret1.getHeader()
-        table_name=ret.getTableNames()+ret1.getTableNames()
-        table_name2=ret1.getTableNames()
-        for i in range(0,len(header)):
-            for y in range(0,len(table_name2)):
-                header[i].append(table_name2[y]+"."+header[i][0])
-        relation=Relation(header,self.__name,table_name)
+        for head in header:
+            while len(head)!=1:
+                del head[-1]
+        relation=Relation(header,self.__name)
         #ak sa relacie rovnaju tak prejde vsetkymi riadkami relacie a prida ich do novej a potom prejde vsetkymi
         #riadkami relacie1 a prida ich do novej
         if columnsName==columnsName1:
@@ -285,12 +285,10 @@ class Intersection:
         columnsName1=ret1.getColumnsName()
         header=ret.getHeader()
         header1=ret1.getHeader()
-        table_name=ret.getTableNames()+ret1.getTableNames()
-        table_name2=ret1.getTableNames()
-        for i in range(0,len(header)):
-            for y in range(0,len(table_name2)):
-                header[i].append(table_name2[y]+"."+header[i][0])
-        relation=Relation(header,self.__name,table_name)
+        for head in header:
+            while len(head)!=1:
+                del head[-1]
+        relation=Relation(header,self.__name)
         #ak sa hlavicky oboch relacii rovnaju tak prejde vsetkymi riadkami relacie a zisti ci sa data nachadzaju
         #aj v relacii1 ak ano tak riadok prida do novej relacie
         if columnsName==columnsName1:
@@ -319,7 +317,6 @@ class Division:
         columns=ret.getHeader()
         columns_help=copy.deepcopy(columns)
         columns1=ret1.getHeader()
-        table_name=ret.getTableNames()
         indexes=[]
         indexes2=[]
         match={}
@@ -330,7 +327,7 @@ class Division:
                 del columns[indexes[-1]]
             except ValueError:
                 raise CompileError("Columns`s names are not founded in table","Division error in "+self.__name)
-        relation=Relation(columns,self.__name,table_name)
+        relation=Relation(columns,self.__name)
         #ulozi do premennej indexes2 cisla stlpcov, ktore ostanu vo vyslednej relacii
         for i in range(0,len(columns)):
             indexes2.append(findElement(columns_help,columns[i][0]))
@@ -389,8 +386,7 @@ class Difference:
         columnsName1=ret1.getColumnsName()
         header=ret.getHeader()
         header1=ret1.getHeader()
-        table_name=ret.getTableNames()
-        relation=Relation(header,self.__name,table_name)
+        relation=Relation(header,self.__name)
         #zisti ci sa hlavicky rovnaju v oboch relaciach
         if columnsName==columnsName1:
             #pre kazdy riadok relacie skusi najst zaznam v druhej relacii ak nenajde tak zaznam prida do novej relacie
@@ -448,29 +444,30 @@ class Join:
         opo=False
         if not self.__natural:
             try:
-                findElement(header,self.__column1)
+                findElement(header,self.__column1.lower())
             except ValueError:
                 opo=True
             new_columns=header+header1
-            table_name=ret.getTableNames()+ret1.getTableNames()
         try:
-            indexes1.append(findElement(header,self.__column1))
+            indexes1.append(findElement(header,self.__column1.lower()))
         except ValueError:
             pass
         try:
-            indexes1.append(findElement(header,self.__column2))
+            indexes1.append(findElement(header,self.__column2.lower()))
         except ValueError:
             pass
         try:
-            indexes2.append(findElement(header1,self.__column1))
+            indexes2.append(findElement(header1,self.__column1.lower()))
         except ValueError:
             pass
         try:
-            indexes2.append(findElement(header1,self.__column2))
+            indexes2.append(findElement(header1,self.__column2.lower()))
         except ValueError:
             pass
         #skontroluje ci sa obidve stlpce nachadzaju v tabulkach a ci sa nachadzaju prave len raz
-        if len(indexes1)+len(indexes2) != 2 and not self.__natural:
+        if len(indexes1)+len(indexes2)<2 and not self.__natural:
+            raise CompileError("Some columns names are wrong",self.__type+" error in "+self.__name)
+        if len(indexes1)+len(indexes2) > 2 and not self.__natural:
             raise CompileError("Columns`s names are not unique",self.__type+" error in "+self.__name)
         if len(indexes1) is 2 and not self.__natural:
             #obidva stlpce su z prvej tabulky
@@ -482,7 +479,6 @@ class Join:
             #jeden stlpec z jednej tabulky, druhy stlpec z druhej tabulky
             used=set()
             if self.__natural:
-                table_name=ret.getTableNames()+ret1.getTableNames()
                 for i in range(0,len(header)):
                     try:
                         index=findElement(header1,header[i][0])
@@ -495,22 +491,20 @@ class Join:
                     except ValueError:
                         pass
                 new_columns=header
-                table_name2=ret1.getTableNames()
                 for index in range(0,len(header1)):
                     try:
                         indexes2.index(index)
-                        for i in range(0,len(table_name2)):
-                            try:
-                                number=findElement(header,header1[index][0])
-
-                            except ValueError:
-                                raise CompileError(self.__type + " error in "+ self.__name,"Compile error")
-                            new_columns[number].append(table_name2[i]+"."+header1[index][0])
+                        try:
+                            number=findElement(header,header1[index][0])
+                            while len(new_columns[number])!=1:
+                                del new_columns[number][-1]
+                        except ValueError:
+                            raise CompileError(self.__type + " error in "+ self.__name,"Compile error")
                     except ValueError:
                         new_columns.append(header1[index])
             if len(indexes1) is 0:
                 raise CompileError(self.__type + " error in "+ self.__name+ ". Tables haven`t got any same columns","Compile error")
-            relation=Relation(new_columns,self.__name,table_name)
+            relation=Relation(new_columns,self.__name)
             for i in ret:
                 number=0
                 for y in ret1:
@@ -556,26 +550,6 @@ class Join:
                         new=new1+y.getData()
                         relation.addRow(Row(new))
         return relation
-def checkType(column):
-    if type(column) is datetime.datetime:
-        typ="datetime"
-        return typ
-    if type(column) is datetime.date:
-        typ="date"
-        return typ
-    if type(column) is str:
-        typ="string"
-        return typ
-    try:
-        float(column)
-        typ="number"
-    except TypeError:
-        try:
-            str(column)
-            typ="string"
-        except ValueError:
-            typ=column+"unknown"
-    return typ
 def condition(column1,column2,number,condition1,name):
     if (column1 is not None and column2 is not None) and (condition1 != "LIKE" and condition1 != "NOT LIKE"):
         if type(column1)!=type(column2):
@@ -659,17 +633,44 @@ def condition(column1,column2,number,condition1,name):
             return False
 
 def parse_time(time_str):
-    regex = re.compile(r'((?P<days>\d+?)d)?((?P<hours>\d+?)hr)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?((?P<microseconds>\d+?)ms)?')
+    regex = re.compile(r'((?P<days>\d+\.\d+?||\d+?)d)?((?P<hours>\d+\.\d+?||\d+?)hr)?((?P<minutes>\d+\.\d+?||\d+?)min)?((?P<seconds>\d+\.\d+?||\d+?)s)?((?P<microseconds>\d+\.\d+?||\d+?)ms)?')
     parts = regex.match(time_str)
     if not parts:
-        return
+        return None
     parts = parts.groupdict()
-    print parts
     time_params = {}
     for (name, param) in parts.iteritems():
-        print name
         if param:
-            time_params[name] = int(param)
+            try:
+                time_params[name] = int(param)
+            except ValueError:
+                time_params[name]=float(param)
 
+    if len(time_params) is 0:
+        raise ValueError
+    c=re.findall(r"\d*\.\d+|\d+", time_str)
+    if len(c)!=len(time_params):
+        raise ValueError
     return timedelta(**dict(( (key, value)
                               for key, value in time_params.items() )))
+
+def parse_time1(time_str):
+    regex = re.compile(r'((?P<years>\d+\.\d+?||\d+?)y)?((?P<months>\d+\.\d+?||\d+?)m)?')
+    parts = regex.match(time_str)
+    if not parts:
+        return None
+    parts = parts.groupdict()
+    time_params = {}
+    for (name, param) in parts.iteritems():
+        if param:
+            try:
+                time_params[name] = int(param)
+            except ValueError:
+                time_params[name] = float(param)
+
+    if len(time_params) is 0:
+        raise ValueError
+    c=re.findall(r"\d*\.\d+|\d+", time_str)
+    if len(c)!=len(time_params):
+        raise ValueError
+    return relativedelta(years=time_params['years'],months=time_params['months'])
