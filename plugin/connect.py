@@ -5,6 +5,9 @@ import paramiko
 import psycopg2
 from error import *
 import dateutil
+import re
+from dateutil.relativedelta import relativedelta
+from operations import parse_time
 def Singleton(cls):
     instance = {}
     def getinstance():
@@ -42,7 +45,7 @@ class Connection():
                         raise CompileError("Cannot connect to server","Connection error")
             else:
                 try:
-                    self.__database.connect(host1, user=user2,password=password2)
+                    self.__database.connect(host1, username=user2,password=password2)
                 except paramiko.AuthenticationException as e:
                     raise CompileError(e.__str__()+" Login or password to server is wrong","Connection error")
                 except Exception as e:
@@ -50,8 +53,9 @@ class Connection():
                         raise CompileError("Connect to database failed. Unknown server "+ host1,"Connection error")
                     else:
                         raise CompileError("Cannot connect to server","Connection error")
-            command='bash -l -c "sqlplus '+user1+"/"+password1+"@orcl\""
+            command='bash -l -c "sqlplus '+user1+"\""
             self.__stdin,self.__stdout,self.__stderr=self.__database.exec_command(command)
+            self.__stdin.write(password1)
             self.__stdin.write('col c new_value cnv;\n')
             self.__stdin.write('select chr(10) c from dual;\n')
             self.__stdin.write('set sqlprompt "#~#~#~#~#~#~#~#~# cnv";\n')
@@ -63,58 +67,32 @@ class Connection():
             line=self.__stdout.readline()
             while line!="SQL> #~#~#~#~#~#~#~#~#\n":
                 if line=="ERROR:\n":
-                    raise CompileError("Database authentication error. Login or password to database is wrong","Connection error")
+                    raise CompileError("Database authentication error. Login or password to database is wrong. Login must be in format for example login@orcl","Connection error")
                 line=self.__stdout.readline()
-            self.__stdin.write('set pages 0;\n')
-            line=self.__stdout.readline()
-            while line!="#~#~#~#~#~#~#~#~#\n":
-                line=self.__stdout.readline()
-            self.__stdin.write('set recsep ea;\n')
-            line=self.__stdout.readline()
-            while line!="#~#~#~#~#~#~#~#~#\n":
-                line=self.__stdout.readline()
-            self.__stdin.write('set space 10;\n')
-            line=self.__stdout.readline()
-            while line!="#~#~#~#~#~#~#~#~#\n":
-                line=self.__stdout.readline()
-            self.__stdin.write('set tab on;\n')
-            line=self.__stdout.readline()
-            while line!="#~#~#~#~#~#~#~#~#\n":
-                line=self.__stdout.readline()
-            self.__stdin.write('set colsep ||;\n')
-            line=self.__stdout.readline()
-            while line!="#~#~#~#~#~#~#~#~#\n":
-                line=self.__stdout.readline()
-            self.__stdin.write('set linesize 32767 ||;\n')
-            line=self.__stdout.readline()
-            while line!="#~#~#~#~#~#~#~#~#\n":
-               line=self.__stdout.readline()
-            self.__stdin.write('alter session set NLS_TIMESTAMP_FORMAT="YYYY/MM/DD HH24:MI:SS:FF";\n')
-            line=self.__stdout.readline()
-            while line!="#~#~#~#~#~#~#~#~#\n":
-               line=self.__stdout.readline()
-            self.__stdin.write('alter session set NLS_DATE_FORMAT="YYYY/MM/DD";\n')
-            line=self.__stdout.readline()
-            while line!="#~#~#~#~#~#~#~#~#\n":
-               line=self.__stdout.readline()
+            self.write_command('set pages 0;\n')
+            self.write_command('set recsep ea;\n')
+            self.write_command('set space 10;\n')
+            self.write_command('set tab on;\n')
+            self.write_command('set colsep ||;\n')
+            self.write_command('set linesize 32767 ||;\n')
+            self.write_command('alter session set NLS_TIMESTAMP_FORMAT="YYYY/MM/DD HH24:MI:SS:FF";\n')
+            self.write_command('alter session set NLS_DATE_FORMAT="YYYY/MM/DD";\n')
             self.__typ="oracle"
         elif type is 2:
             #pripojenie na postreSQL
             try:
                 self.__database=psycopg2.connect(host=host1,dbname=database1,user=user1,password=password1)
+                self.__database.set_isolation_level(0)
             except psycopg2.OperationalError as e:
                 raise CompileError(e.__str__(),"Connection error")
             self.__typ="postgreSQL"
         else:
             print "Nespravne pripojenie"
-    def disconnect(self):
-        self.__typ=""
-        self.__type=""
-        self.__password=""
-        self.__database=""
-        self.__user=""
-        self.__password2=""
-        self.__user2=""
+    def write_command(self,command):
+        self.__stdin.write(command)
+        line=self.__stdout.readline()
+        while line!="#~#~#~#~#~#~#~#~#\n":
+            line=self.__stdout.readline()
     def getTyp(self):
         return self.__typ
     def getColumns(self,table):
@@ -143,7 +121,7 @@ class Connection():
             header=[]
             for name in names:
                 new=[]
-                name_column=name[0]
+                name_column=name[0].lower()
                 type=name[-1]
                 #0-type string
                 #1-type number
@@ -184,8 +162,8 @@ class Connection():
                 new=[]
                 for column in cursor[y]:
                     if i is 0:
-                        new.append(column)
-                        str=table+"."+column
+                        new.append(column.lower())
+                        str=table+"."+column.lower()
                         new.append(str)
                     i += 1
                 header.append(new)
@@ -210,8 +188,11 @@ class Connection():
                     string=string+lines[i]
                     i +=1
                 data.append(string)
-                if lines[i+1]=="\n":
-                    end=True
+                try:
+                    if lines[i+1]=="\n":
+                        end=True
+                except IndexError:
+                    raise CompileError("Table "+table+" is empty","Table error in "+table)
             cursor=[]
             new=[]
             for row in data:
@@ -237,6 +218,29 @@ class Connection():
                         column = dateutil.parser.parse(column).date()
                     elif self.__type[i] is 3:
                         column = dateutil.parser.parse(column)
+                    elif self.__type[i] is 4:
+                        #datatype interval year to month
+                        try:
+                            data=re.findall("\d+", column)
+                            for i in range(0,len(data)):
+                                    data[i]=int(data[i])
+                            column=relativedelta(years=data[0],months=data[1])
+                        except Exception:
+                            raise CompileError("Format of 'interval month to day' returned from database is wrong","Database error")
+                    elif self.__type[i] is 5:
+                        try:
+                            data=re.findall("\d+", column)
+                            for i in range(0,len(data)):
+                                int(data[i])
+                            column=""
+                            column=column+data[0]+"d"
+                            column=column+data[1]+"hr"
+                            column=column+data[2]+"min"
+                            column=column+data[3]+"s"
+                            column=column+data[4]+"ms"
+                            column=parse_time(column)
+                        except Exception:
+                            raise CompileError("Format of 'interval month to day' returned from database is wrong","Database error")
                     new.append(column)
                 cursor.append(new)
             return cursor
