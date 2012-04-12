@@ -6,7 +6,10 @@ from list import *
 from attention import *
 import math
 from error import *
-import threading
+from progress import WaitingBar
+import gobject
+
+
 
 class DRA:
     def __init__(self,interface):
@@ -14,24 +17,25 @@ class DRA:
         self.__menu=None
         self.__menuConnect=None
     def pluginMain(self):
-        self.__menu = self.__interface.gui_manager.main_menu.add_menu_item('DRA', '', -1, 'Relational algebra')
-        self.__menu.add_submenu()
-        self.__menu.visible=False
-        self.__submenu = self.__menu.submenu
-        self.__submenu.add_menu_item('disconnect',lambda z:self.disconnect(),-1,'Disconnect')
-        self.__submenu.add_menu_item('connect', lambda x:self.menuConnect(), -1, 'Connect to database')
-        self.__submenu.add_menu_item('execute',lambda z:self.execute(),-1,'Execute')
-        menu=self.__submenu.items
-        for m in menu:
-            if m.gui_id=="disconnect":
-                m.visible=False
-            if m.gui_id=="execute":
-                m.enabled=False
         self.__interface.add_notification('project-opened', lambda y:self.showMenu())
         self.__interface.transaction.autocommit = True
         self.__interface.set_main_loop(GtkMainLoop())
+
     def showMenu(self):
         if self.__interface.project.metamodel.uri == "urn:umlfri.org:metamodel:DRAmodel":
+            self.__menu = self.__interface.gui_manager.main_menu.add_menu_item('DRA', '', -1, 'Relational algebra')
+            self.__menu.add_submenu()
+            self.__menu.visible=False
+            self.__submenu = self.__menu.submenu
+            self.__submenu.add_menu_item('disconnect',lambda z:self.disconnect(),-1,'Disconnect')
+            self.__submenu.add_menu_item('connect', lambda x:self.menuConnect(), -1, 'Connect to database')
+            self.__submenu.add_menu_item('execute',lambda z:self.execute(),-1,'Execute')
+            menu=self.__submenu.items
+            for m in menu:
+                if m.gui_id=="disconnect":
+                    m.visible=False
+                if m.gui_id=="execute":
+                    m.enabled=False
             self.__menu.visible = True
         else:
             self.__menu.visible = False
@@ -56,8 +60,6 @@ class DRA:
         cancel_button=self.__gtkBuilder.get_object("button2")
         connect_button.connect("clicked",lambda x:self.connect())
         cancel_button.connect("clicked",lambda y:self.cancel())
-        self.__menuConnect.set_keep_above(True)
-        self.__menuConnect.show_all()
         self.__objectes=[]
         self.__objectes.append(self.__gtkBuilder.get_object("accellabel1"))
         self.__objectes.append(self.__gtkBuilder.get_object("checkbutton1"))
@@ -65,6 +67,11 @@ class DRA:
         self.__objectes.append(self.__gtkBuilder.get_object("accellabel3"))
         self.__objectes.append(self.__gtkBuilder.get_object("entry5"))
         self.__objectes.append(self.__gtkBuilder.get_object("entry6"))
+        self.__menuConnect.set_keep_above(True)
+        self.__menuConnect.set_modal(True)
+        self.__menuConnect.set_transient_for(None)
+        self.__menuConnect.set_type_hint(gtk.gdk.WINDOW_TYPE_HINT_DIALOG)
+        self.__menuConnect.show_all()
         for object in self.__objectes:
             object.hide()
     def check(self):
@@ -82,7 +89,6 @@ class DRA:
             entry=self.__gtkBuilder.get_object("entry6")
             entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#FFFFFF"))
             entry.set_editable(True)
-
     def oracle(self):
         type=self.__combobox.get_active()
         if type is 1:
@@ -130,13 +136,17 @@ class DRA:
             self.__menuConnect.show()
             attention=InfoBarDemo("Connect error","You must type password for server or use check button for using same login info","Warning")
         else:
+            #self.__gtkBuilder.add_from_file("C:\Users\michal\Desktop\loader.glade")
+            #self.__menuConnect.hide()
+            #self.__loader=WaitingBar()
+            #gobject.idle_add(self.__loader.show_all)
             try:
                 a=Connection()
                 if type==1 and check==False:
                     a.connect(host,database,user,password,type,user1,password1)
                 else:
                     a.connect(host,database,user,password,type)
-                self.__menuConnect.hide()
+                #self.__loader.hide_all()
                 menu=self.__submenu.items
                 for m in menu:
                     if m.gui_id=="connect":
@@ -145,12 +155,14 @@ class DRA:
                         m.visible=True
                     if m.gui_id=="execute":
                         m.enabled=True
+                self.__menuConnect.hide()
             except CompileError as e:
-                self.__menuConnect.show()
-                attention=InfoBarDemo(e.getName(),e.getValue(),"Warning")
+                #gobject.idle_add(self.__loader.hide_all)
+                self.__menuConnect.show_all()
+                attention=InfoBarDemo(e.getName(),e.getValue(),"Warning",parent=self.__menuConnect)
             except Exception as e:
-                print e
-                self.__menuConnect.show()
+                #self.__loader.hide_all()
+                self.__menuConnect.show_all()
                 attention=InfoBarDemo("Connection error","Connect to database failed","Warning")
             
     def disconnect(self):

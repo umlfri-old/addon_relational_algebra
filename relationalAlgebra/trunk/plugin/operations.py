@@ -6,9 +6,11 @@ from error import *
 from MySQLdb import ProgrammingError
 import psycopg2
 import datetime
-import dateutil.parser
+import time
 from datetime import timedelta
-from dateutil.relativedelta import relativedelta
+#import dateutil.parser
+
+#from dateutil.relativedelta import relativedelta
 
 class Table:
     def __init__(self,data,table):
@@ -132,11 +134,11 @@ class Selection:
                 raise CompileError("Condition 'LIKE' and 'NOT LIKE' can be use only with string","Selection error in "+self.__name)
         self.__column="~"
         self.__data="~"
-        if type(index1) is str or type(index1) is float or index1 is None or type(index1) is datetime.date or type(index1) is datetime.datetime or type(index1) is datetime.timedelta or isinstance(index1,relativedelta):
+        if type(index1) is str or type(index1) is float or index1 is None or type(index1) is datetime.date or type(index1) is datetime.datetime or type(index1) is datetime.timedelta:
             self.__column=index1
         elif type(index1) is int:
             index.append(index1)
-        if type(index2) is str or type(index2) is float or index2 is None or type(index2) is datetime.date or type(index2) is datetime.datetime or type(index2) is datetime.timedelta or isinstance(index2,relativedelta):
+        if type(index2) is str or type(index2) is float or index2 is None or type(index2) is datetime.date or type(index2) is datetime.datetime or type(index2) is datetime.timedelta :
             self.__data=index2
         elif type(index2) is int:
             index.append(index2)
@@ -186,15 +188,14 @@ def check(column,header,name,condition1):
                 index=float(column)
             except ValueError:
                 if condition1!="LIKE" or condition1!="NOT LIKE" or condition1!="IS" or condition1!="IS NOT":
-                    if ":" in column:
+                    try:
+                        time_format = "%Y-%m-%d %H:%M:%S"
+                        index=datetime.datetime.fromtimestamp(time.mktime(time.strptime(column, time_format)))
+                        return index
+                    except ValueError:
                         try:
-                            index = dateutil.parser.parse(column)
-                            return index
-                        except ValueError:
-                            raise CompileError("Format of date is wrong","Selection error in "+name)
-                    else:
-                        try:
-                            index=dateutil.parser.parse(column).date()
+                            time_format = "%Y-%m-%d"
+                            index=datetime.date.fromtimestamp(time.mktime(time.strptime(column, time_format)))
                             return index
                         except ValueError:
                             try:
@@ -205,7 +206,7 @@ def check(column,header,name,condition1):
                                     index=parse_time1(column)
                                     return index
                                 except ValueError:
-                                    raise CompileError(column+ " is not valid. Value without quotes can be use only with number, date or interval(_d_hr_min_s_ms)","Selection error in "+name)
+                                    raise CompileError(column+ " is not valid. Value without quotes can be use only with number, date(YYYY-MM-DD HH:MM:SS or YYYY-MM-DD) or interval(D HH:MM:SS)","Selection error in "+name)
                 else:
                     if condition1=="IS" or condition1=="IS NOT":
                         raise CompileError("Condition  'IS' and 'IS NOT' can be compare only with 'NULL'","Selection error in "+name)
@@ -633,7 +634,7 @@ def condition(column1,column2,number,condition1,name):
             return False
 
 def parse_time(time_str):
-    regex = re.compile(r'((?P<days>\d+\.\d+?||\d+?)d)?((?P<hours>\d+\.\d+?||\d+?)hr)?((?P<minutes>\d+\.\d+?||\d+?)min)?((?P<seconds>\d+\.\d+?||\d+?)s)?((?P<microseconds>\d+\.\d+?||\d+?)ms)?')
+    regex = re.compile(r'((?P<days>[+-]\d+\.\d+?||[+-]\d+?) )?((?P<hours>\d+\.\d+?||\d+?):)?((?P<minutes>\d+\.\d+?||\d+?):)?((?P<seconds>\d+?)[.])?')
     parts = regex.match(time_str)
     if not parts:
         return None
@@ -648,14 +649,14 @@ def parse_time(time_str):
 
     if len(time_params) is 0:
         raise ValueError
-    c=re.findall(r"\d*\.\d+|\d+", time_str)
+    c=re.findall(r"\d+\.\d+|\d+", time_str)
     if len(c)!=len(time_params):
         raise ValueError
     return timedelta(**dict(( (key, value)
                               for key, value in time_params.items() )))
 
 def parse_time1(time_str):
-    regex = re.compile(r'((?P<years>\d+\.\d+?||\d+?)y)?((?P<months>\d+\.\d+?||\d+?)m)?')
+    regex = re.compile(r'((?P<years>[+-]\d+\.\d+?||[+-]\d+?)y)?((?P<months>\d+\.\d+?||\d+?)m)?')
     parts = regex.match(time_str)
     if not parts:
         return None
