@@ -7,6 +7,7 @@ from error import *
 import dateutil
 import re
 from dateutil.relativedelta import relativedelta
+import datetime,time
 from operations import parse_time
 def Singleton(cls):
     instance = {}
@@ -21,7 +22,9 @@ class Connection():
     def __init__(self):
         self.__typ=""
         self.__type=[]
-
+    def disconnect(self):
+        self.__typ=""
+        self.__type=[]
     def connect(self,host1,database1,user1,password1,type,user2=None,password2=None):
         if type is 0:
             try:
@@ -35,7 +38,8 @@ class Connection():
             self.__database.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             if user2 is None:
                 try:
-                    self.__database.connect(host1, username=user1,password=password1)
+                    user=user1.rsplit("@")
+                    self.__database.connect(host1, username=user[0],password=password1)
                 except paramiko.AuthenticationException as e:
                     raise CompileError(e.__str__()+ " Login or password to server is wrong","Connection error")
                 except Exception as e:
@@ -55,15 +59,17 @@ class Connection():
                         raise CompileError("Cannot connect to server","Connection error")
             command='bash -l -c "sqlplus '+user1+"\""
             self.__stdin,self.__stdout,self.__stderr=self.__database.exec_command(command)
+            if not self.__stdout.readline():
+                string=self.__stderr.readlines()
+                if "bash: sqlplus:" in string[0]:
+                    raise CompileError("Oracle database not installed on server","Connection error")
+                else:
+                    raise CompileError("Connect to database failed","Connection error")
             self.__stdin.write(password1)
             self.__stdin.write('col c new_value cnv;\n')
             self.__stdin.write('select chr(10) c from dual;\n')
             self.__stdin.write('set sqlprompt "#~#~#~#~#~#~#~#~# cnv";\n')
-            if not self.__stdout.readline():
-                if "bash: sqlplus:" in self.__stderr.readlines():
-                    raise CompileError("Oracle database not installed on server","Connection error")
-                else:
-                    raise CompileError("Connect to database failed","Connection error")
+
             line=self.__stdout.readline()
             while line!="SQL> #~#~#~#~#~#~#~#~#\n":
                 if line=="ERROR:\n":
@@ -75,8 +81,8 @@ class Connection():
             self.write_command('set tab on;\n')
             self.write_command('set colsep ||;\n')
             self.write_command('set linesize 32767 ||;\n')
-            self.write_command('alter session set NLS_TIMESTAMP_FORMAT="YYYY/MM/DD HH24:MI:SS:FF";\n')
-            self.write_command('alter session set NLS_DATE_FORMAT="YYYY/MM/DD";\n')
+            self.write_command('alter session set NLS_TIMESTAMP_FORMAT="YYYY-MM-DD HH24:MI:SS";\n')
+            self.write_command('alter session set NLS_DATE_FORMAT="YYYY-MM-DD";\n')
             self.__typ="oracle"
         elif type is 2:
             #pripojenie na postreSQL
@@ -158,16 +164,28 @@ class Connection():
             header=[]
             i=0
             cursor=list(cursor)
-            for y in range(len(cursor)-1,-1,-1):
-                new=[]
-                for column in cursor[y]:
-                    if i is 0:
-                        new.append(column.lower())
-                        str=table+"."+column.lower()
-                        new.append(str)
-                    i += 1
-                header.append(new)
-                i=0
+            if self.__typ=="postgreSQL":
+                for y in range(len(cursor)-1,-1,-1):
+                    new=[]
+                    for column in cursor[y]:
+                        if i is 0:
+                            new.append(column.lower())
+                            str=table+"."+column.lower()
+                            new.append(str)
+                        i += 1
+                    header.append(new)
+                    i=0
+            else:
+                for y in range(0,len(cursor)):
+                    new=[]
+                    for column in cursor[y]:
+                        if i is 0:
+                            new.append(column.lower())
+                            str=table+"."+column.lower()
+                            new.append(str)
+                        i += 1
+                    header.append(new)
+                    i=0
             return header
     def getData(self,table):
         prikaz="SELECT * FROM "+table+";\n"
@@ -215,9 +233,11 @@ class Connection():
                             except ValueError:
                                 raise ValueError
                     elif self.__type[i] is 2:
-                        column = dateutil.parser.parse(column).date()
+                        time_format = "%Y-%m-%d"
+                        column = datetime.date.fromtimestamp(time.mktime(time.strptime(column, time_format)))
                     elif self.__type[i] is 3:
-                        column = dateutil.parser.parse(column)
+                        time_format = "%Y-%m-%d %H:%M:%S"
+                        column = datetime.datetime.fromtimestamp(time.mktime(time.strptime(column, time_format)))
                     elif self.__type[i] is 4:
                         #datatype interval year to month
                         try:
@@ -226,20 +246,11 @@ class Connection():
                                     data[i]=int(data[i])
                             column=relativedelta(years=data[0],months=data[1])
                         except Exception:
-                            raise CompileError("Format of 'interval month to day' returned from database is wrong","Database error")
+                            raise CompileError("Format of 'year to month' returned from database is wrong","Database error")
                     elif self.__type[i] is 5:
                         try:
-                            data=re.findall("\d+", column)
-                            for i in range(0,len(data)):
-                                int(data[i])
-                            column=""
-                            column=column+data[0]+"d"
-                            column=column+data[1]+"hr"
-                            column=column+data[2]+"min"
-                            column=column+data[3]+"s"
-                            column=column+data[4]+"ms"
                             column=parse_time(column)
-                        except Exception:
+                        except Exception as e:
                             raise CompileError("Format of 'interval month to day' returned from database is wrong","Database error")
                     new.append(column)
                 cursor.append(new)

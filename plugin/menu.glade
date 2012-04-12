@@ -13,14 +13,15 @@
     <property name="can_focus">False</property>
     <property name="stock">gtk-redo</property>
   </object>
-  <object class="GtkListStore" id="liststore1"/>
   <object class="GtkWindow" id="window1">
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">Connect to database</property>
     <property name="resizable">False</property>
     <property name="modal">True</property>
+    <property name="window_position">center-on-parent</property>
     <property name="destroy_with_parent">True</property>
     <property name="type_hint">dialog</property>
+    <property name="deletable">False</property>
     <child>
       <object class="GtkVBox" id="vbox1">
         <property name="can_focus">False</property>
@@ -215,6 +216,7 @@
                 <property name="use_action_appearance">False</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">False</property>
+                <property name="no_show_all">True</property>
                 <property name="xalign">0</property>
                 <property name="draw_indicator">True</property>
               </object>
@@ -228,6 +230,7 @@
             <child>
               <object class="GtkAccelLabel" id="accellabel1">
                 <property name="can_focus">False</property>
+                <property name="no_show_all">True</property>
                 <property name="xalign">0</property>
                 <property name="xpad">5</property>
                 <property name="ypad">10</property>
@@ -242,6 +245,7 @@
               <object class="GtkHSeparator" id="hseparator1">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="no_show_all">True</property>
               </object>
               <packing>
                 <property name="right_attach">3</property>
@@ -253,6 +257,7 @@
             <child>
               <object class="GtkAccelLabel" id="accellabel2">
                 <property name="can_focus">False</property>
+                <property name="no_show_all">True</property>
                 <property name="xalign">0</property>
                 <property name="xpad">5</property>
                 <property name="ypad">5</property>
@@ -266,6 +271,7 @@
             <child>
               <object class="GtkAccelLabel" id="accellabel3">
                 <property name="can_focus">False</property>
+                <property name="no_show_all">True</property>
                 <property name="xalign">0</property>
                 <property name="xpad">5</property>
                 <property name="ypad">5</property>
@@ -279,6 +285,7 @@
             <child>
               <object class="GtkEntry" id="entry5">
                 <property name="can_focus">True</property>
+                <property name="no_show_all">True</property>
                 <property name="invisible_char">●</property>
                 <property name="invisible_char_set">True</property>
                 <property name="primary_icon_activatable">False</property>
@@ -296,6 +303,7 @@
             <child>
               <object class="GtkEntry" id="entry6">
                 <property name="can_focus">True</property>
+                <property name="no_show_all">True</property>
                 <property name="visibility">False</property>
                 <property name="invisible_char">●</property>
                 <property name="activates_default">True</property>
