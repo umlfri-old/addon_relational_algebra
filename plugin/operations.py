@@ -8,10 +8,48 @@ import psycopg2
 import datetime
 import time
 from datetime import timedelta
-#import dateutil.parser
+import math
 
-#from dateutil.relativedelta import relativedelta
+class Interval():
+    def __init__(self,years,months,precision):
+        self.__years=years
+        self.__months=months
+        self.__precision=precision
+        if str(self.__years)[0]=="-":
+            self.__sign="-"
+        else:
+            self.__sign="+"
+    def getSign(self):
+        return self.__sign
 
+    def getYears(self):
+        return self.__years
+    def getMonths(self):
+        return self.__months
+    def __str__(self):
+        spaceMonths=""
+        spaceYears=""
+        if self.__months<10:
+            spaceMonths += "0"
+        if len(str(self.__years))!=self.__precision:
+             for i in range(0,self.__precision-1):
+                 spaceYears +="0"
+        return self.__sign+spaceYears+str(int(math.fabs(self.__years)))+"-"+spaceMonths+str(self.__months)
+
+    def __cmp__(self, other):
+        months=int(math.fabs(self.getYears()))*12+self.getMonths()
+        monthsOther=int(math.fabs(other.getYears()))*12+other.getMonths()
+        if months == monthsOther and self.getSign()==other.getSign():
+            return 0
+        elif months<monthsOther and self.getSign()==other.getSign():
+            return -1
+        elif months>monthsOther and self.getSign()==other.getSign():
+            return 1
+        elif self.getSign()!=other.getSign():
+            if self.getSign()=="+":
+                return 1
+            else:
+                return -1
 class Table:
     def __init__(self,data,table):
         self.__database=data
@@ -134,11 +172,11 @@ class Selection:
                 raise CompileError("Condition 'LIKE' and 'NOT LIKE' can be use only with string","Selection error in "+self.__name)
         self.__column="~"
         self.__data="~"
-        if type(index1) is str or type(index1) is float or index1 is None or type(index1) is datetime.date or type(index1) is datetime.datetime or type(index1) is datetime.timedelta:
+        if type(index1) is str or type(index1) is float or index1 is None or type(index1) is datetime.date or type(index1) is datetime.datetime or type(index1) is datetime.timedelta or isinstance(index1,Interval) :
             self.__column=index1
         elif type(index1) is int:
             index.append(index1)
-        if type(index2) is str or type(index2) is float or index2 is None or type(index2) is datetime.date or type(index2) is datetime.datetime or type(index2) is datetime.timedelta :
+        if type(index2) is str or type(index2) is float or index2 is None or type(index2) is datetime.date or type(index2) is datetime.datetime or type(index2) is datetime.timedelta or isinstance(index2,Interval):
             self.__data=index2
         elif type(index2) is int:
             index.append(index2)
@@ -634,10 +672,10 @@ def condition(column1,column2,number,condition1,name):
             return False
 
 def parse_time(time_str):
-    regex = re.compile(r'((?P<days>[+-]\d+\.\d+?||[+-]\d+?) )?((?P<hours>\d+\.\d+?||\d+?):)?((?P<minutes>\d+\.\d+?||\d+?):)?((?P<seconds>\d+?)[.])?')
+    regex = re.compile(r'((?P<days>[+-]?\d+\.\d+?|[+-]?\d+?) )((?P<hours>\d+\.\d+?|\d+?):)((?P<minutes>\d+\.\d+?|\d+?):)((?P<seconds>\d+[.]?))?')
     parts = regex.match(time_str)
     if not parts:
-        return None
+        raise ValueError
     parts = parts.groupdict()
     time_params = {}
     for (name, param) in parts.iteritems():
@@ -646,20 +684,17 @@ def parse_time(time_str):
                 time_params[name] = int(param)
             except ValueError:
                 time_params[name]=float(param)
-
     if len(time_params) is 0:
         raise ValueError
-    c=re.findall(r"\d+\.\d+|\d+", time_str)
-    if len(c)!=len(time_params):
-        raise ValueError
+
     return timedelta(**dict(( (key, value)
                               for key, value in time_params.items() )))
 
 def parse_time1(time_str):
-    regex = re.compile(r'((?P<years>[+-]\d+\.\d+?||[+-]\d+?)y)?((?P<months>\d+\.\d+?||\d+?)m)?')
+    regex = re.compile(r'((?P<years>[+-]?\d+\.\d+?|[+-]?\d+?)-)((?P<months>\d+\.\d+?|\d+[.]?))?')
     parts = regex.match(time_str)
     if not parts:
-        return None
+        raise ValueError
     parts = parts.groupdict()
     time_params = {}
     for (name, param) in parts.iteritems():
@@ -668,10 +703,7 @@ def parse_time1(time_str):
                 time_params[name] = int(param)
             except ValueError:
                 time_params[name] = float(param)
-
     if len(time_params) is 0:
         raise ValueError
-    c=re.findall(r"\d*\.\d+|\d+", time_str)
-    if len(c)!=len(time_params):
-        raise ValueError
-    return relativedelta(years=time_params['years'],months=time_params['months'])
+    return Interval(years=time_params['years'],months=time_params['months'],precision=0)
+

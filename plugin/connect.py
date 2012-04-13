@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 import MySQLdb
 import paramiko
+from operations import *
 import psycopg2
 from error import *
-import dateutil
 import re
-from dateutil.relativedelta import relativedelta
 import datetime,time
 from operations import parse_time
+
 def Singleton(cls):
     instance = {}
     def getinstance():
@@ -136,18 +136,20 @@ class Connection():
                 #4-interval year-month
                 #5-interval day-seconds
                 if "INTEGER" in type or "NUMBER" in type:
-                    type=1
+                    type_column=[1]
                 elif "DATE" in type:
-                    type=2
+                    type_column=[2]
                 elif "TIME" in type:
-                    type=3
+                    type_column=[3]
                 elif "INTERVAL YEAR" in type:
-                    type=4
+                    type_column=[4]
+                    c=re.findall(r"\d+",type)
+                    type_column.append(int(c[0]))
                 elif "INTERVAL DAY" in type:
-                    type=5
+                    type_column=[5]
                 else:
-                    type=0
-                self.__type.append(type)
+                    type_column=[0]
+                self.__type.append(type_column)
                 name_column=' '.join(name_column.split())
                 new.append(name_column)
                 str=table+"."+name_column
@@ -224,7 +226,7 @@ class Connection():
                     column=' '.join(columns[i].split())
                     if column=="":
                         column=None
-                    elif self.__type[i] is 1:
+                    elif self.__type[i][0] is 1:
                         try:
                             column=int(column)
                         except ValueError:
@@ -232,22 +234,22 @@ class Connection():
                                 column=float(column)
                             except ValueError:
                                 raise ValueError
-                    elif self.__type[i] is 2:
+                    elif self.__type[i][0] is 2:
                         time_format = "%Y-%m-%d"
                         column = datetime.date.fromtimestamp(time.mktime(time.strptime(column, time_format)))
-                    elif self.__type[i] is 3:
+                    elif self.__type[i][0] is 3:
                         time_format = "%Y-%m-%d %H:%M:%S"
                         column = datetime.datetime.fromtimestamp(time.mktime(time.strptime(column, time_format)))
-                    elif self.__type[i] is 4:
+                    elif self.__type[i][0] is 4:
                         #datatype interval year to month
                         try:
-                            data=re.findall("\d+", column)
-                            for i in range(0,len(data)):
-                                    data[i]=int(data[i])
-                            column=relativedelta(years=data[0],months=data[1])
-                        except Exception:
+                            data=re.findall("[+-]?\d+", column)
+                            for a in range(0,len(data)):
+                                    data[a]=int(data[a])
+                            column=Interval(years=data[0],months=data[1],precision=self.__type[i][1])
+                        except Exception as e:
                             raise CompileError("Format of 'year to month' returned from database is wrong","Database error")
-                    elif self.__type[i] is 5:
+                    elif self.__type[i][0] is 5:
                         try:
                             column=parse_time(column)
                         except Exception as e:
@@ -259,3 +261,4 @@ class Connection():
             cursor=self.__database.cursor()
             cursor.execute(prikaz)
             return cursor
+
