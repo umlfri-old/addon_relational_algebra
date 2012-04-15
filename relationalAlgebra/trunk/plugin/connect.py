@@ -8,6 +8,10 @@ from error import *
 import re
 import datetime,time
 from operations import parse_time
+from threading import *
+import gobject
+from attention import *
+from progress import WaitingBar
 
 def Singleton(cls):
     instance = {}
@@ -18,20 +22,34 @@ def Singleton(cls):
     return getinstance
 
 @Singleton
-class Connection():
+class Connection(Thread):
     def __init__(self):
+        Thread.__init__(self)
         self.__typ=""
         self.__type=[]
     def disconnect(self):
         self.__typ=""
         self.__type=[]
-    def connect(self,host1,database1,user1,password1,type,user2=None,password2=None):
+    def connect(self,host1,database1,user1,password1,type,menu,menuConnect,user2=None,password2=None):
+        p=WaitingBar(self)
+        gobject.idle_add(p.show_all)
         if type is 0:
             try:
                 self.__database= MySQLdb.connect(host=host1,user=user1,passwd=password1,db=database1)
             except MySQLdb.OperationalError as e:
-                raise CompileError(e.__str__(),"Connection error")
+                a=InfoBarDemo('Connection error',e.__str__(),"Warning",menuConnect,menu)
+                gobject.idle_add(p.hide_all)
+                gobject.idle_add(a.show)
+                return
             self.__typ="mysql"
+            for m in menu:
+                if m.gui_id=="connect":
+                    m.visible=False
+                if m.gui_id=="disconnect":
+                    m.visible=True
+                if m.gui_id=="execute":
+                    m.enabled=True
+            gobject.idle_add(p.hide_all)
         elif type is 1:
             #pripojenie na oracle
             self.__database = paramiko.SSHClient()
@@ -41,39 +59,65 @@ class Connection():
                     user=user1.rsplit("@")
                     self.__database.connect(host1, username=user[0],password=password1)
                 except paramiko.AuthenticationException as e:
-                    raise CompileError(e.__str__()+ " Login or password to server is wrong","Connection error")
+                    a=InfoBarDemo("Connection error",e.__str__()+ " Login or password to server is wrong","Warning",menuConnect,menu)
+                    gobject.idle_add(p.hide_all)
+                    gobject.idle_add(a.show)
+                    return
                 except Exception as e:
                     if e.__str__()=="[Errno 11004] getaddrinfo failed":
-                        raise CompileError("Connect to database failed. Unknown server "+ host1,"Connection error")
+                        a=InfoBarDemo("Connection error","Connect to database failed. Unknown server "+ host1,"Warning",menuConnect,menu)
+                        gobject.idle_add(p.hide_all)
+                        gobject.idle_add(a.show)
+                        return
                     else:
-                        raise CompileError("Cannot connect to server","Connection error")
+                        a=InfoBarDemo("Connection error","Cannot connect to server","Warning",menuConnect,menu)
+                        gobject.idle_add(p.hide_all)
+                        gobject.idle_add(a.show)
+                        return
             else:
                 try:
                     self.__database.connect(host1, username=user2,password=password2)
                 except paramiko.AuthenticationException as e:
-                    raise CompileError(e.__str__()+" Login or password to server is wrong","Connection error")
+                    a=InfoBarDemo("Connection error",e.__str__()+" Login or password to server is wrong","Warning",menuConnect,menu)
+                    gobject.idle_add(p.hide_all)
+                    gobject.idle_add(a.show)
+                    return
                 except Exception as e:
-                    if e.__str__()=="[Errno 11004] getaddrinfo failed":
-                        raise CompileError("Connect to database failed. Unknown server "+ host1,"Connection error")
+                    if e.__str__()== '[Errno 11004] getaddrinfo failed':
+                        a=InfoBarDemo("Connection error","Connect to database failed. Unknown server "+ host1,"Warning",menuConnect,menu)
+                        gobject.idle_add(p.hide_all)
+                        gobject.idle_add(a.show)
+                        return
                     else:
-                        raise CompileError("Cannot connect to server","Connection error")
+                        a=InfoBarDemo("Connection error","Cannot connect to server","Warning",menuConnect,menu)
+                        gobject.idle_add(p.hide_all)
+                        gobject.idle_add(a.show)
+                        return
             command='bash -l -c "sqlplus '+user1+"\""
             self.__stdin,self.__stdout,self.__stderr=self.__database.exec_command(command)
             if not self.__stdout.readline():
                 string=self.__stderr.readlines()
                 if "bash: sqlplus:" in string[0]:
-                    raise CompileError("Oracle database not installed on server","Connection error")
+                    a=InfoBarDemo("Connection error","Oracle database not installed on server","Warning",menuConnect,menu)
+                    gobject.idle_add(p.hide_all)
+                    gobject.idle_add(a.show)
+                    return
                 else:
-                    raise CompileError("Connect to database failed","Connection error")
+                    a=InfoBarDemo("Connection error","Connect to database failed","Warning",menuConnect,menu)
+                    gobject.idle_add(p.hide_all)
+                    gobject.idle_add(a.show)
+                    return
             self.__stdin.write(password1)
             self.__stdin.write('col c new_value cnv;\n')
             self.__stdin.write('select chr(10) c from dual;\n')
             self.__stdin.write('set sqlprompt "#~#~#~#~#~#~#~#~# cnv";\n')
-
             line=self.__stdout.readline()
             while line!="SQL> #~#~#~#~#~#~#~#~#\n":
                 if line=="ERROR:\n":
-                    raise CompileError("Database authentication error. Login or password to database is wrong. Login must be in format for example login@orcl","Connection error")
+                    a=InfoBarDemo("Connection error","Database authentication error. Login or password to database is wrong. Login must be in format for example login@orcl","Warning",menuConnect,menu)
+                    gobject.idle_add(p.hide_all)
+                    gobject.idle_add(a.show)
+                    return
                 line=self.__stdout.readline()
             self.write_command('set pages 0;\n')
             self.write_command('set recsep ea;\n')
@@ -84,16 +128,37 @@ class Connection():
             self.write_command('alter session set NLS_TIMESTAMP_FORMAT="YYYY-MM-DD HH24:MI:SS";\n')
             self.write_command('alter session set NLS_DATE_FORMAT="YYYY-MM-DD";\n')
             self.__typ="oracle"
+            for m in menu:
+                if m.gui_id=="connect":
+                    m.visible=False
+                if m.gui_id=="disconnect":
+                    m.visible=True
+                if m.gui_id=="execute":
+                    m.enabled=True
+            gobject.idle_add(p.hide_all)
         elif type is 2:
             #pripojenie na postreSQL
             try:
                 self.__database=psycopg2.connect(host=host1,dbname=database1,user=user1,password=password1)
                 self.__database.set_isolation_level(0)
             except psycopg2.OperationalError as e:
-                raise CompileError(e.__str__(),"Connection error")
+                a=InfoBarDemo("Connection error",e.__str__(),"Warning",menuConnect,menu)
+                gobject.idle_add(p.hide_all)
+                gobject.idle_add(a.show)
+                return
             self.__typ="postgreSQL"
+            for m in menu:
+                if m.gui_id=="connect":
+                    m.visible=False
+                if m.gui_id=="disconnect":
+                    m.visible=True
+                if m.gui_id=="execute":
+                    m.enabled=True
+            gobject.idle_add(p.hide_all)
         else:
+            gobject.idle_add(p.hide_all)
             print "Nespravne pripojenie"
+
     def write_command(self,command):
         self.__stdin.write(command)
         line=self.__stdout.readline()
