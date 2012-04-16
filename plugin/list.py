@@ -18,7 +18,6 @@ class PyApp(gtk.Window):
         self.set_size_request(width, 50+(height*25))
         self.destroy_with_parent
         self.set_position(gtk.WIN_POS_CENTER)
-        
         self.connect("destroy", gtk.main_quit)
         self.set_title("Result of "+self.__data.getName())
         vbox = gtk.VBox(False, 8)
@@ -26,7 +25,8 @@ class PyApp(gtk.Window):
         sw = gtk.ScrolledWindow()
         sw.set_shadow_type(gtk.SHADOW_ETCHED_IN)
         sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        
+        icon = sw.render_icon(gtk.STOCK_EXECUTE, gtk.ICON_SIZE_BUTTON)
+        self.set_icon(icon)
         vbox.pack_start(sw, True, True, 0)
 
         store = self.create_model()
