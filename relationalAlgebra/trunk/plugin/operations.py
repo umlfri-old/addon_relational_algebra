@@ -590,8 +590,11 @@ class Join:
                         relation.addRow(Row(new))
         return relation
 def condition(column1,column2,number,condition1,name):
+    number=False
     if (column1 is not None and column2 is not None) and (condition1 != "LIKE" and condition1 != "NOT LIKE"):
-        if type(column1)!=type(column2):
+        if isinstance(column1, (float,int,long,complex)) and isinstance(column2, (float,int,long,complex)):
+            number=True
+        if type(column1)!=type(column2) and number==False:
             raise CompileError("Types of columns are different","Selection error in "+name)
     if condition1=="=" :
         if column1 == column2:
