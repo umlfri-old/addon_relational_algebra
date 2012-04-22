@@ -27,18 +27,21 @@ class Connection(Thread):
         self.__typ=""
         self.__type=[]
     def disconnect(self):
-        self.__typ=""
+        self.__typ=None
         self.__type=[]
-    def connect(self,host1,database1,user1,password1,type,menu,menuConnect,user2=None,password2=None):
+    def connect(self,host1,database1,user1,password1,type,menu,windows,user2=None,password2=None):
         p=WaitingBar(self)
+        windows.append(p)
         gobject.idle_add(p.show_all)
         if type is 0:
             try:
                 self.__database= MySQLdb.connect(host=host1,user=user1,passwd=password1,db=database1)
             except MySQLdb.OperationalError as e:
-                a=InfoBarDemo('Connection error',e.__str__(),"Warning",menuConnect,menu)
+                a=InfoBarDemo('Connection error',e.__str__(),"Warning",menu)
+                windows.append(a)
                 gobject.idle_add(p.hide_all)
-                gobject.idle_add(a.show)
+                if self.__typ is not None:
+                    gobject.idle_add(a.show)
                 return
             self.__typ="mysql"
             for m in menu:
@@ -58,53 +61,69 @@ class Connection(Thread):
                     user=user1.rsplit("@")
                     self.__database.connect(host1, username=user[0],password=password1)
                 except paramiko.AuthenticationException as e:
-                    a=InfoBarDemo("Connection error",e.__str__()+ " Login or password to server is wrong","Warning",menuConnect,menu)
+                    a=InfoBarDemo("Connection error",e.__str__()+ " Login or password to server is wrong","Warning",menu)
+                    windows.append(a)
                     gobject.idle_add(p.hide_all)
-                    gobject.idle_add(a.show)
+                    if self.__typ is not None:
+                        gobject.idle_add(a.show)
                     return
                 except Exception as e:
                     if e.__str__()=="[Errno 11004] getaddrinfo failed":
-                        a=InfoBarDemo("Connection error","Connect to database failed. Unknown server "+ host1,"Warning",menuConnect,menu)
+                        a=InfoBarDemo("Connection error","Connect to database failed. Unknown server "+ host1,"Warning",menu)
+                        windows.append(a)
                         gobject.idle_add(p.hide_all)
-                        gobject.idle_add(a.show)
+                        if self.__typ is not None:
+                            gobject.idle_add(a.show)
                         return
                     else:
-                        a=InfoBarDemo("Connection error","Cannot connect to server","Warning",menuConnect,menu)
+                        a=InfoBarDemo("Connection error","Cannot connect to server","Warning",menu)
+                        windows.append(a)
                         gobject.idle_add(p.hide_all)
-                        gobject.idle_add(a.show)
+                        if self.__typ is not None:
+                            gobject.idle_add(a.show)
                         return
             else:
                 try:
                     self.__database.connect(host1, username=user2,password=password2)
                 except paramiko.AuthenticationException as e:
-                    a=InfoBarDemo("Connection error",e.__str__()+" Login or password to server is wrong","Warning",menuConnect,menu)
+                    a=InfoBarDemo("Connection error",e.__str__()+" Login or password to server is wrong","Warning",menu)
+                    windows.append(a)
                     gobject.idle_add(p.hide_all)
-                    gobject.idle_add(a.show)
+                    if self.__typ is not None:
+                        gobject.idle_add(a.show)
                     return
                 except Exception as e:
                     if e.__str__()== '[Errno 11004] getaddrinfo failed':
-                        a=InfoBarDemo("Connection error","Connect to database failed. Unknown server "+ host1,"Warning",menuConnect,menu)
+                        a=InfoBarDemo("Connection error","Connect to database failed. Unknown server "+ host1,"Warning",menu)
+                        windows.append(a)
                         gobject.idle_add(p.hide_all)
-                        gobject.idle_add(a.show)
+                        if self.__typ is not None:
+                            gobject.idle_add(a.show)
                         return
                     else:
-                        a=InfoBarDemo("Connection error","Cannot connect to server","Warning",menuConnect,menu)
+                        a=InfoBarDemo("Connection error","Cannot connect to server","Warning",menu)
+                        windows.append(a)
                         gobject.idle_add(p.hide_all)
-                        gobject.idle_add(a.show)
+                        if self.__typ is not None:
+                            gobject.idle_add(a.show)
                         return
             command='bash -l -c "sqlplus '+user1+"\""
             self.__stdin,self.__stdout,self.__stderr=self.__database.exec_command(command)
             if not self.__stdout.readline():
                 string=self.__stderr.readlines()
                 if "bash: sqlplus:" in string[0]:
-                    a=InfoBarDemo("Connection error","Oracle database not installed on server","Warning",menuConnect,menu)
+                    a=InfoBarDemo("Connection error","Oracle database not installed on server","Warning",menu)
+                    windows.append(a)
                     gobject.idle_add(p.hide_all)
-                    gobject.idle_add(a.show)
+                    if self.__typ is not None:
+                        gobject.idle_add(a.show)
                     return
                 else:
-                    a=InfoBarDemo("Connection error","Connect to database failed","Warning",menuConnect,menu)
+                    a=InfoBarDemo("Connection error","Connect to database failed","Warning",menu)
+                    windows.append(a)
                     gobject.idle_add(p.hide_all)
-                    gobject.idle_add(a.show)
+                    if self.__typ is not None:
+                        gobject.idle_add(a.show)
                     return
             self.__stdin.write(password1)
             self.__stdin.write('col c new_value cnv;\n')
@@ -113,9 +132,11 @@ class Connection(Thread):
             line=self.__stdout.readline()
             while line!="SQL> #~#~#~#~#~#~#~#~#\n":
                 if line=="ERROR:\n":
-                    a=InfoBarDemo("Connection error","Database authentication error. Login or password to database is wrong. Login must be in format for example login@orcl","Warning",menuConnect,menu)
+                    a=InfoBarDemo("Connection error","Database authentication error. Login or password to database is wrong. Login must be in format for example login@orcl","Warning",menu)
+                    windows.append(a)
                     gobject.idle_add(p.hide_all)
-                    gobject.idle_add(a.show)
+                    if self.__typ is not None:
+                        gobject.idle_add(a.show)
                     return
                 line=self.__stdout.readline()
             self.write_command('set pages 0;\n')
@@ -141,9 +162,11 @@ class Connection(Thread):
                 self.__database=psycopg2.connect(host=host1,dbname=database1,user=user1,password=password1)
                 self.__database.set_isolation_level(0)
             except psycopg2.OperationalError as e:
-                a=InfoBarDemo("Connection error",e.__str__(),"Warning",menuConnect,menu)
+                a=InfoBarDemo("Connection error",e.__str__(),"Warning",menu)
+                windows.append(a)
                 gobject.idle_add(p.hide_all)
-                gobject.idle_add(a.show)
+                if self.__typ is not None:
+                    gobject.idle_add(a.show)
                 return
             self.__typ="postgreSQL"
             for m in menu:
