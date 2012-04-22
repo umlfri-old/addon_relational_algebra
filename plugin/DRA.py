@@ -36,6 +36,21 @@ class DRA:
                     m.enabled=True
             self.__menu.visible = True
         else:
+            a=Connection()
+            a.disconnect()
+            for window in self.__windows:
+                if window.get_title()=="Connect to database" or isinstance(window,WaitingBar):
+                    try:
+                        window.hide_all()
+                    except Exception:
+                        pass
+                else:
+                    try:
+                        window.destroy()
+                    except Exception:
+                        pass
+            self.__menuConnect.hide()
+            self.__windows=[]
             self.__menu.visible = False
     def menuConnect(self):
         if self.__menuConnect is None:
@@ -68,12 +83,19 @@ class DRA:
             self.__objectes.append(self.__gtkBuilder.get_object("accellabel3"))
             self.__objectes.append(self.__gtkBuilder.get_object("entry5"))
             self.__objectes.append(self.__gtkBuilder.get_object("entry6"))
+            entry=self.__gtkBuilder.get_object("entry5")
+            entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#E6E6E6"))
+            entry.set_editable(False)
+            entry=self.__gtkBuilder.get_object("entry6")
+            entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#E6E6E6"))
+            entry.set_editable(False)
             self.__menuConnect.set_keep_above(True)
             self.__menuConnect.set_modal(True)
             self.__menuConnect.set_transient_for(None)
             self.__menuConnect.set_type_hint(gtk.gdk.WINDOW_TYPE_HINT_DIALOG)
             self.__password.delete_text(0,len(self.__password.get_text())-1)
             self.__password2.delete_text(0,len(self.__password2.get_text())-1)
+            self.__windows=[self.__menuConnect]
             self.__menuConnect.show_all()
             for object in self.__objectes:
                 object.hide()
@@ -124,38 +146,45 @@ class DRA:
         if type==-1:
             self.__menuConnect.show()
             attention=InfoBarDemo("Connect error","You must choose type of database","Warning")
+            self.__windows.append(attention)
             attention.show()
         elif host=="":
             self.__menuConnect.show()
             attention=InfoBarDemo("Connect error","You must type host name","Warning")
+            self.__windows.append(attention)
             attention.show()
         elif database=="" and type!=1:
             self.__menuConnect.show()
             attention=InfoBarDemo("Connect error","You must type name of database","Warning")
+            self.__windows.append(attention)
             attention.show()
         elif user=="":
             self.__menuConnect.show()
             attention=InfoBarDemo("Connect error","You must type user name","Warning")
+            self.__windows.append(attention)
             attention.show()
         elif password=="":
             self.__menuConnect.show()
             attention=InfoBarDemo("Connect error","You must type password","Warning")
+            self.__windows.append(attention)
             attention.show()
         elif check == False and type==1 and user1=="":
             self.__menuConnect.show()
             attention=InfoBarDemo("Connect error","You must type user name for server or use check button for using same login info","Warning")
+            self.__windows.append(attention)
             attention.show()
         elif check == False and type==1 and password1=="":
             self.__menuConnect.show()
             attention=InfoBarDemo("Connect error","You must type password for server or use check button for using same login info","Warning")
+            self.__windows.append(attention)
             attention.show()
         else:
             menu=self.__submenu.items
             a=Connection()
             if type==1 and check==False:
-                threading._start_new_thread(a.connect,(host,database,user,password,type,menu,self.__menuConnect,user1,password1))
+                threading._start_new_thread(a.connect,(host,database,user,password,type,menu,self.__windows,user1,password1))
             else:
-                threading._start_new_thread(a.connect,(host,database,user,password,type,menu,self.__menuConnect))
+                threading._start_new_thread(a.connect,(host,database,user,password,type,menu,self.__windows))
             self.__menuConnect.hide()
             for m in menu:
                 if m.gui_id=="connect":
@@ -186,15 +215,19 @@ class DRA:
                     o=object.execute()
                 except CompileError as error:
                     attention=InfoBarDemo(error.getName(),error.getValue(),"Warning")
+                    self.__windows.append(attention)
                     attention.show()
                 if o is not None:
-                    PyApp(o)
+                    self.__windows.append(PyApp(o))
                     gtk.main()
             else:
                 attention=InfoBarDemo("Execute error","You must select one element","Warning")
+                self.__windows.append(attention)
                 attention.show()
+
         else:
             attention=InfoBarDemo("Connect error","You must first connect to database","Warning")
+            self.__windows.append(attention)
             attention.show()
     def create(self,trunk,ob=None):
         name= trunk.object.type.name
