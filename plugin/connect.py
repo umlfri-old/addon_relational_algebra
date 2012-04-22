@@ -20,7 +20,6 @@ def Singleton(cls):
             instance[cls]=cls()
         return instance[cls]
     return getinstance
-
 @Singleton
 class Connection(Thread):
     def __init__(self):

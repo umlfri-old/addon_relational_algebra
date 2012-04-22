@@ -7,38 +7,33 @@ from attention import *
 import math
 from error import *
 import threading
-import time
-from threading import Thread
-from progress import WaitingBar
-import gobject
-
-
 
 class DRA:
     def __init__(self,interface):
         self.__interface=interface
-        self.__menu=None
         self.__menuConnect=None
+        self.__menu = self.__interface.gui_manager.main_menu.add_menu_item('DRA', '', -1, 'Relational algebra')
+        self.__menu.add_submenu()
+        self.__menu.visible=False
+        self.__submenu = self.__menu.submenu
+        self.__submenu.add_menu_item('disconnect',lambda z:self.disconnect(),-1,'Disconnect')
+        self.__submenu.add_menu_item('connect', lambda x:self.menuConnect(), -1, 'Connect to database')
+        self.__submenu.add_menu_item('execute',lambda z:self.execute(),-1,'Execute')
     def pluginMain(self):
         self.__interface.add_notification('project-opened', lambda y:self.showMenu())
         self.__interface.transaction.autocommit = True
         self.__interface.set_main_loop(GtkMainLoop())
-
     def showMenu(self):
         if self.__interface.project.metamodel.uri == "urn:umlfri.org:metamodel:DRAmodel":
-            self.__menu = self.__interface.gui_manager.main_menu.add_menu_item('DRA', '', -1, 'Relational algebra')
-            self.__menu.add_submenu()
-            self.__menu.visible=False
-            self.__submenu = self.__menu.submenu
-            self.__submenu.add_menu_item('disconnect',lambda z:self.disconnect(),-1,'Disconnect')
-            self.__submenu.add_menu_item('connect', lambda x:self.menuConnect(), -1, 'Connect to database')
-            self.__submenu.add_menu_item('execute',lambda z:self.execute(),-1,'Execute')
             menu=self.__submenu.items
             for m in menu:
                 if m.gui_id=="disconnect":
                     m.visible=False
                 if m.gui_id=="execute":
                     m.enabled=False
+                if m.gui_id=="connect":
+                    m.visible=True
+                    m.enabled=True
             self.__menu.visible = True
         else:
             self.__menu.visible = False
@@ -47,6 +42,8 @@ class DRA:
             self.__gtkBuilder=gtk.Builder()
             self.__gtkBuilder.add_from_file("share\\addons\\DRA\\plugin\\menu.glade")
             self.__menuConnect=self.__gtkBuilder.get_object("window1")
+            self.__password=self.__gtkBuilder.get_object("entry4")
+            self.__password2=self.__gtkBuilder.get_object("entry6")
             self.__database=self.__gtkBuilder.get_object("entry2")
             self.__check=self.__gtkBuilder.get_object("checkbutton1")
             store = gtk.ListStore(str)
@@ -75,10 +72,14 @@ class DRA:
             self.__menuConnect.set_modal(True)
             self.__menuConnect.set_transient_for(None)
             self.__menuConnect.set_type_hint(gtk.gdk.WINDOW_TYPE_HINT_DIALOG)
+            self.__password.delete_text(0,len(self.__password.get_text())-1)
+            self.__password2.delete_text(0,len(self.__password2.get_text())-1)
             self.__menuConnect.show_all()
             for object in self.__objectes:
                 object.hide()
         else:
+            self.__password.delete_text(0,len(self.__password.get_text()))
+            self.__password2.delete_text(0,len(self.__password2.get_text()))
             self.__menuConnect.show_all()
     def check(self):
         if self.__check.get_active():
