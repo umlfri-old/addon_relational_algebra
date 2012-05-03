@@ -383,7 +383,7 @@ class Division:
                 if string1==string2:
                     string3=""
                     for c in range(0,len(indexes2)):
-                        string3=string3+","+i.getData(indexes2[c])
+                        string3=string3+","+i.getData(indexes2[c]).__str__()
                     if match.get(string3) is None :
                         new= [string3, 1]
                         match[string3]=new

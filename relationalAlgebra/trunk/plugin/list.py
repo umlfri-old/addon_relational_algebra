@@ -6,16 +6,9 @@ class PyApp(gtk.Window):
         super(PyApp, self).__init__()
         self.__data=data
         self.__header=self.__data.getColumnsName()
-        width=180
-        length=0
-        z=0
-        for i in self.__header:
-            length += len(i)
-        if length>30:
-            z=length-30
-        width=width+(z*15)
-        self.set_size_request(width, 200)
+        self.set_size_request(180, 200)
         self.destroy_with_parent
+        self.set_resizable(True)
         self.set_position(gtk.WIN_POS_CENTER)
         self.connect("destroy", gtk.main_quit)
         self.set_title("Result of "+self.__data.getName())
@@ -38,8 +31,6 @@ class PyApp(gtk.Window):
         self.show_all()
 
     def create_model(self):
-        
-        
         store = gtk.ListStore(*([str] * len(self.__header)))
 
         for i in self.__data:
