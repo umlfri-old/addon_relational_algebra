@@ -16,5 +16,5 @@ class Row:
     def getString(self):
         string=""
         for i in self.__data:
-            string=string+i+" "
+            string=string+i.__str__()+" "
         return string

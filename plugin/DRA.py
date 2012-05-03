@@ -10,6 +10,8 @@ import threading
 
 class DRA:
     def __init__(self,interface):
+        self.__type="ine"
+        self.__windows=[]
         self.__interface=interface
         self.__menuConnect=None
         self.__menu = self.__interface.gui_manager.main_menu.add_menu_item('DRA', '', -1, 'Relational algebra')
@@ -25,6 +27,7 @@ class DRA:
         self.__interface.set_main_loop(GtkMainLoop())
     def showMenu(self):
         if self.__interface.project.metamodel.uri == "urn:umlfri.org:metamodel:DRAmodel":
+            self.__type="DRA"
             menu=self.__submenu.items
             for m in menu:
                 if m.gui_id=="disconnect":
@@ -36,22 +39,25 @@ class DRA:
                     m.enabled=True
             self.__menu.visible = True
         else:
-            a=Connection()
-            a.disconnect()
-            for window in self.__windows:
-                if window.get_title()=="Connect to database" or isinstance(window,WaitingBar):
-                    try:
-                        window.hide_all()
-                    except Exception:
-                        pass
-                else:
-                    try:
-                        window.destroy()
-                    except Exception:
-                        pass
-            self.__menuConnect.hide()
-            self.__windows=[]
-            self.__menu.visible = False
+            if self.__type is "DRA":
+                a=Connection()
+                a.disconnect()
+                for window in self.__windows:
+                    if window.get_title()=="Connect to database" or isinstance(window,WaitingBar):
+                        try:
+                            window.hide_all()
+                        except Exception:
+                            pass
+                    else:
+                        try:
+                            window.destroy()
+                        except Exception:
+                            pass
+                if self.__menuConnect is not None:
+                    self.__menuConnect.hide()
+                self.__windows=[]
+                self.__menu.visible = False
+            self.__type="ine"
     def menuConnect(self):
         if self.__menuConnect is None:
             self.__gtkBuilder=gtk.Builder()
@@ -218,8 +224,13 @@ class DRA:
                     self.__windows.append(attention)
                     attention.show()
                 if o is not None:
-                    self.__windows.append(PyApp(o))
-                    gtk.main()
+                    if not o.getHeader():
+                        attention=InfoBarDemo("Relation error","Relation is empty","Warning")
+                        self.__windows.append(attention)
+                        attention.show()
+                    else:
+                        self.__windows.append(PyApp(o))
+                        gtk.main()
             else:
                 attention=InfoBarDemo("Execute error","You must select one element","Warning")
                 self.__windows.append(attention)
@@ -307,12 +318,12 @@ class DRA:
             raise CompileError("You cannot select connection","Compile error")
         if ob is not None:
             ob.set(object)
-        if len(list_connection) is not 0:
+        if len(list_destination) is not 0:
             source_position=trunk.position
             left_object=None
             right_object=None
-            for i in range(0,len(list_connection)):
-                conn=list_connection[i]
+            for i in range(0,len(list_destination)):
+                conn=list_destination[i]
                 object1=conn.source
                 object1_position=object1.position
                 corner=math.atan2(source_position[1]-object1_position[1],source_position[0]-object1_position[0])
@@ -320,8 +331,8 @@ class DRA:
                     raise CompileError("Wrong orientation of diagram","Compile error")
                 if left_object is None:
                     left_object=object1
-                    if len(list_connection)!=1:
-                        conn2=list_connection[i+1]
+                    if len(list_destination)!=1:
+                        conn2=list_destination[i+1]
                         right_object=conn2.source
                 else:
                     left_object_position=left_object.position

@@ -15,7 +15,7 @@
                         <Svg width="20" height="20">
                             <path d="M 0,2 L 0,17 L 20,3 M 20,2 L 20,18 M 20,17 L 0,2 M -7,2 L 0,2 M 0,17 L -7,17 M 20,3 L 27,3 M 20,17 L 27,17" style="fill:none;stroke:#000000;stroke-width:2;stroke-miterlimit:4;stroke-dashoffset:0;stroke-opacity:1" />
                         </Svg>
-                        <Padding top="10" left="5">
+                        <Padding top="10" left="8">
                         <VBox>
                             <TextBox text="#self.column1" font="Arial 10"/>
                             <Padding left="1">
