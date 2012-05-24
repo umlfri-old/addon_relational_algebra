@@ -21,9 +21,8 @@ def Singleton(cls):
         return instance[cls]
     return getinstance
 @Singleton
-class Connection(Thread):
+class Connection():
     def __init__(self):
-        Thread.__init__(self)
         self.__typ=""
         self.__type=[]
     def disconnect(self):
@@ -61,6 +60,7 @@ class Connection(Thread):
                     user=user1.rsplit("@")
                     self.__database.connect(host1, username=user[0],password=password1)
                 except paramiko.AuthenticationException as e:
+                    print "f"
                     a=InfoBarDemo("Connection error",e.__str__()+ " Login or password to server is wrong","Warning",menu)
                     windows.append(a)
                     gobject.idle_add(p.hide_all)
@@ -68,6 +68,7 @@ class Connection(Thread):
                         gobject.idle_add(a.show)
                     return
                 except Exception as e:
+                   
                     if e.__str__()=="[Errno 11004] getaddrinfo failed":
                         a=InfoBarDemo("Connection error","Connect to database failed. Unknown server "+ host1,"Warning",menu)
                         windows.append(a)
@@ -84,7 +85,9 @@ class Connection(Thread):
                         return
             else:
                 try:
+
                     self.__database.connect(host1, username=user2,password=password2)
+
                 except paramiko.AuthenticationException as e:
                     a=InfoBarDemo("Connection error",e.__str__()+" Login or password to server is wrong","Warning",menu)
                     windows.append(a)
@@ -107,11 +110,15 @@ class Connection(Thread):
                         if self.__typ is not None:
                             gobject.idle_add(a.show)
                         return
+
             command='bash -l -c "sqlplus '+user1+"\""
             self.__stdin,self.__stdout,self.__stderr=self.__database.exec_command(command)
+
             if not self.__stdout.readline():
+
                 string=self.__stderr.readlines()
                 if "bash: sqlplus:" in string[0]:
+
                     a=InfoBarDemo("Connection error","Oracle database not installed on server","Warning",menu)
                     windows.append(a)
                     gobject.idle_add(p.hide_all)
@@ -119,17 +126,20 @@ class Connection(Thread):
                         gobject.idle_add(a.show)
                     return
                 else:
+
                     a=InfoBarDemo("Connection error","Connect to database failed","Warning",menu)
                     windows.append(a)
                     gobject.idle_add(p.hide_all)
                     if self.__typ is not None:
                         gobject.idle_add(a.show)
                     return
+
             self.__stdin.write(password1)
             self.__stdin.write('col c new_value cnv;\n')
             self.__stdin.write('select chr(10) c from dual;\n')
             self.__stdin.write('set sqlprompt "#~#~#~#~#~#~#~#~# cnv";\n')
             line=self.__stdout.readline()
+            
             while line!="SQL> #~#~#~#~#~#~#~#~#\n":
                 if line=="ERROR:\n":
                     a=InfoBarDemo("Connection error","Database authentication error. Login or password to database is wrong. Login must be in format for example login@orcl","Warning",menu)

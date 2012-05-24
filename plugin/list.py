@@ -32,7 +32,6 @@ class PyApp(gtk.Window):
 
     def create_model(self):
         store = gtk.ListStore(*([str] * len(self.__header)))
-
         for i in self.__data:
             new=[]
             for column in i:
