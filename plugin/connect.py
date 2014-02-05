@@ -6,6 +6,7 @@ from operations import *
 import psycopg2
 from error import *
 import re
+import traceback
 import datetime,time
 from operations import parse_time
 from threading import *
@@ -29,6 +30,7 @@ class Connection():
         self.__typ=None
         self.__type=[]
     def connect(self,host1,database1,user1,password1,type,menu,windows,user2=None,password2=None):
+
         p=WaitingBar(self)
         windows.append(p)
         gobject.idle_add(p.show_all)
@@ -68,7 +70,7 @@ class Connection():
                         gobject.idle_add(a.show)
                     return
                 except Exception as e:
-                   
+
                     if e.__str__()=="[Errno 11004] getaddrinfo failed":
                         a=InfoBarDemo("Connection error","Connect to database failed. Unknown server "+ host1,"Warning",menu)
                         windows.append(a)
@@ -139,7 +141,7 @@ class Connection():
             self.__stdin.write('select chr(10) c from dual;\n')
             self.__stdin.write('set sqlprompt "#~#~#~#~#~#~#~#~# cnv";\n')
             line=self.__stdout.readline()
-            
+
             while line!="SQL> #~#~#~#~#~#~#~#~#\n":
                 if line=="ERROR:\n":
                     a=InfoBarDemo("Connection error","Database authentication error. Login or password to database is wrong. Login must be in format for example login@orcl","Warning",menu)
@@ -190,6 +192,8 @@ class Connection():
         else:
             gobject.idle_add(p.hide_all)
             print "Nespravne pripojenie"
+
+
 
     def write_command(self,command):
         self.__stdin.write(command)

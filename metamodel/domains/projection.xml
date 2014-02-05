@@ -4,9 +4,14 @@
 	</Attribute>
      <Attribute id="c" name="Columns">
          <List>
-             <Domain><Attribute id="meno" name="Meno">
-                 <Str/>
-             </Attribute></Domain>
+             <Domain>
+				<Attribute id="meno" name="Meno">
+					<Str/>
+				</Attribute>
+				<Attribute id="alias" name="Alias">
+					<Str/>
+				</Attribute>
+			</Domain>
          </List>
      </Attribute>
 </Domain>
