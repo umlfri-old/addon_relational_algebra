@@ -14,14 +14,20 @@
                             <TextBox text="π" font="Arial 20"></TextBox>
                             <Padding top="10">
                                 <VBox>
-                                <Loop collection="#self.c">
-                                    <VBox>
-                                    <Condition condition="#_line > 0">
-                                    <TextBox text=", "></TextBox>
-                                </Condition>
-                                <TextBox text="#meno"></TextBox>
-                                    </VBox>
-                            </Loop>
+									<Loop collection="#self.c">
+										<VBox>
+											<Condition condition="#_line > 0">
+												<TextBox text=", "></TextBox>
+											</Condition>
+											<TextBox text="#meno"></TextBox>
+											<Condition condition="#alias">
+												<VBox>
+													<TextBox text=" AS " />
+													<TextBox text="#alias" />
+												</VBox>
+											</Condition>
+										</VBox>
+									</Loop>
                                 </VBox>
                             </Padding>
                         </VBox>

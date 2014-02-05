@@ -18,11 +18,11 @@ class DRA:
         self.__menu.add_submenu()
         self.__menu.visible=False
         self.__submenu = self.__menu.submenu
-        self.__submenu.add_menu_item('disconnect',lambda z:self.disconnect(),-1,'Disconnect')
+        self.__submenu.add_menu_item('disconnect',lambda x:self.disconnect(),-1,'Disconnect')
         self.__submenu.add_menu_item('connect', lambda x:self.menuConnect(), -1, 'Connect to database')
-        self.__submenu.add_menu_item('execute',lambda z:self.execute(),-1,'Execute')
+        self.__submenu.add_menu_item('execute',lambda x:self.execute(),-1,'Execute')
     def pluginMain(self):
-        self.__interface.add_notification('project-opened', lambda y:self.showMenu())
+        self.__interface.add_notification('project-opened', self.showMenu)
         self.__interface.transaction.autocommit = True
         self.__interface.set_main_loop(GtkMainLoop())
     def showMenu(self):
@@ -73,15 +73,15 @@ class DRA:
             store.append (["PostgreSQL"])
             self.__combobox=self.__gtkBuilder.get_object("combobox1")
             self.__combobox.set_model(store)
-            self.__check.connect("toggled",lambda z:self.check())
-            self.__combobox.connect("changed",lambda z:self.oracle())
+            self.__check.connect("toggled",lambda x:self.check())
+            self.__combobox.connect("changed",lambda x:self.oracle())
             cell = gtk.CellRendererText()
             self.__combobox.pack_start(cell, True)
             self.__combobox.add_attribute(cell, 'text',0)
             connect_button=self.__gtkBuilder.get_object("button1")
             cancel_button=self.__gtkBuilder.get_object("button2")
             connect_button.connect("clicked",lambda x:self.connect())
-            cancel_button.connect("clicked",lambda y:self.cancel())
+            cancel_button.connect("clicked",lambda x:self.cancel())
             self.__objectes=[]
             self.__objectes.append(self.__gtkBuilder.get_object("accellabel1"))
             self.__objectes.append(self.__gtkBuilder.get_object("checkbutton1"))
@@ -167,11 +167,6 @@ class DRA:
         elif user=="":
             self.__menuConnect.show()
             attention=InfoBarDemo("Connect error","You must type user name","Warning")
-            self.__windows.append(attention)
-            attention.show()
-        elif password=="":
-            self.__menuConnect.show()
-            attention=InfoBarDemo("Connect error","You must type password","Warning")
             self.__windows.append(attention)
             attention.show()
         elif check == False and type==1 and user1=="":
