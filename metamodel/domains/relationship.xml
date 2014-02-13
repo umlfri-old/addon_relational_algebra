@@ -1,3 +1,5 @@
 <Domain id="relationship" xmlns="http://umlfri.kst.fri.uniza.sk/xmlschema/metamodel.xsd" >
-   
+   <Attribute id="name" name="Description">
+        <Str />
+    </Attribute>
 </Domain>

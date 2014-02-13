@@ -1,15 +1,5 @@
 <Domain id="difference" xmlns="http://umlfri.kst.fri.uniza.sk/xmlschema/metamodel.xsd" >
     <Attribute id="name" name="Name" >
 		<Str/>
-
 	</Attribute>
-   <Attribute id="fd" name="fd">
-       <List>
-           <Domain>
-               <Attribute id="name" name="name">
-                   <Str />
-               </Attribute>
-           </Domain>
-       </List>
-   </Attribute>
 </Domain>

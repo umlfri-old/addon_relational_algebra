@@ -12,7 +12,7 @@
                 <Align align="center center">
                     <Padding left="20">
                         <VBox>
-                            <Svg width="20" height="20">
+                         <Svg width="20" height="20">
                             <path d="M 0,2 L 0,17 L 20,3 L 20,17 L -1,1" style="fill:none;stroke:#000000;stroke-width:2;stroke-miterlimit:4;stroke-dashoffset:0;stroke-opacity:1" />
                         </Svg>
                         <Padding top="10" left="5" right="15">
