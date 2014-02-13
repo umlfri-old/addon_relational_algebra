@@ -2,7 +2,10 @@
     <Icon path="icons/relationship.png"/>
     <Domain id="relationship"/>
         <Appearance>
-        <ConnectionLine style="solid" color="#cfg.Styles.Connection.LineColor"/>
-        <ConnectionArrow index="-1" style="simple_arrow" color="black"/>
- </Appearance>
+			<ConnectionLine style="solid" color="#cfg.Styles.Connection.LineColor"/>
+			<ConnectionArrow index="-1" style="simple_arrow" color="black"/>
+			<Label position="center">
+				<TextBox text="#self.name" />
+			</Label>
+		</Appearance>
 </ConnectionType>

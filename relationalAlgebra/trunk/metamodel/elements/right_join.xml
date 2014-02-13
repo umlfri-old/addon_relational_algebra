@@ -5,7 +5,7 @@
     <Connections>
         <Item value="Relationship" allowrecursive="1"/>
     </Connections>
-   <Appearance>
+	<Appearance>
         <Sizer minheight="40" minwidth="60">
             <Ellipse border="black" fill="green">
                 <Padding top="3">
@@ -15,15 +15,20 @@
                         <Svg width="20" height="20">
                             <path d="M 0,2 L 0,17 L 20,3 M 20,2 L 20,18 M 20,17 L -1,1 M 20,3 L 27,3 M 20,17 L 27,17" style="fill:none;stroke:#000000;stroke-width:2;stroke-miterlimit:4;stroke-dashoffset:0;stroke-opacity:1" />
                         </Svg>
-                        <Padding top="10" left="8">
-                        <VBox>
-                            <TextBox text="#self.column1" font="Arial 10"/>
-                            <Padding left="1">
-                                <TextBox text="#self.condition" font="Arial 10"/>
-                            </Padding>
-                                <Padding left="1" right="15">
-                                    <TextBox text="#self.column2" font="Arial 10"/>
-                                </Padding>
+                        <Padding top="10" left="10" right="15">
+							<VBox>
+								<Loop collection="#self.cond">
+									<VBox>
+										<Condition condition="#_line > 0">
+											<TextBox text="  ˄  "></TextBox>
+										</Condition>
+										<TextBox text="#column1" font="Arial 10"/>
+										<Padding left="3" right="3">
+											<TextBox text="#condition" font="Arial 10"/>
+										</Padding>
+										<TextBox text="#column2" font="Arial 10" />
+									</VBox>
+								</Loop>
                             </VBox>
                         </Padding>
                     </VBox>
