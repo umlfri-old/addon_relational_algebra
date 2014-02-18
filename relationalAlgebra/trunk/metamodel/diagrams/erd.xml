@@ -12,6 +12,7 @@
         <Item value="Division" />
         <Item value="Selection" />
         <Item value="Projection" />
+		<Item value="Rename" />
         <Item value="Inner join" />
         <Item value="Left outter join" />
         <Item value="Right outter join" />
