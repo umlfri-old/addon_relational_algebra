@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ElementType id="Rename" xmlns="http://umlfri.kst.fri.uniza.sk/xmlschema/metamodel.xsd">
+    <Icon path="icons/rename.png" />
+    <Domain id="rename" identity="name" />
+    <Connections>
+        <Item value="Relationship" allowrecursive="1"/>
+    </Connections>
+    <Appearance>
+        <Sizer minheight="40" minwidth="60">
+            <Ellipse border="black" fill="green">
+                <Align align="center center">
+                    <Padding left="10" right="10">
+                        <VBox>
+                            <TextBox text="ρ" font="Arial 20"></TextBox>
+                            <Padding top="15">
+                                <VBox>									
+									<VBox>	
+										<TextBox text="#self.name"></TextBox>	
+									</VBox>
+                                </VBox>
+                            </Padding>
+                        </VBox>
+                    </Padding>
+                </Align>
+            </Ellipse>
+        </Sizer>
+    </Appearance>
+</ElementType>
