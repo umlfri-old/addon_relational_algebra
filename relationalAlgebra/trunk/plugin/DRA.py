@@ -10,21 +10,50 @@ import threading
 
 class DRA:
     def __init__(self,interface):
-        self.__type="ine"
-        self.__windows=[]
-        self.__interface=interface
-        self.__menuConnect=None
+        self.__type = "ine"
+        self.__windows = []
+        self.__interface = interface
+        self.__menuConnect = None
+        self.__editorWindow = None
         self.__menu = self.__interface.gui_manager.main_menu.add_menu_item('DRA', '', -1, 'Relational algebra')
         self.__menu.add_submenu()
         self.__menu.visible=False
         self.__submenu = self.__menu.submenu
-        self.__submenu.add_menu_item('disconnect',lambda x:self.disconnect(),-1,'Disconnect')
+        self.__submenu.add_menu_item('disconnect',lambda x:self.disconnect(), -1, 'Disconnect')
         self.__submenu.add_menu_item('connect', lambda x:self.menuConnect(), -1, 'Connect to database')
-        self.__submenu.add_menu_item('execute',lambda x:self.execute(),-1,'Execute')
+        self.__submenu.add_menu_item('sqlcommand',lambda x:self.showSqlEditor(), -1, 'Sql command')
+        self.__submenu.add_menu_item('execute',lambda x:self.execute(), -1, 'Execute')
+
+
+    def showSqlEditor(self):
+        if self.__editorWindow is None:
+            self.__gtkBuilder=gtk.Builder()
+            self.__gtkBuilder.add_from_file("share\\addons\\DRA\\plugin\\editor.glade")
+            self.__editorWindow=self.__gtkBuilder.get_object("window1")
+            connect_button=self.__gtkBuilder.get_object("button1")
+            cancel_button=self.__gtkBuilder.get_object("button2")
+            connect_button.connect("clicked",lambda x:self.parseSql())
+            cancel_button.connect("clicked",lambda x:self.cancelEditor())
+            self.__editorWindow.set_keep_above(True)
+            self.__editorWindow.set_modal(True)
+            self.__editorWindow.set_transient_for(None)
+            self.__editorWindow.set_type_hint(gtk.gdk.WINDOW_TYPE_HINT_DIALOG)
+            self.__editorWindow.show_all()
+            self.__windows.append(self.__editorWindow)
+        else:
+            self.__editorWindow.show_all()
+
+    def cancelEditor(self):
+        self.__editorWindow.hide()
+
+    def parseSql(self):
+        pass
+
     def pluginMain(self):
         self.__interface.add_notification('project-opened', self.showMenu)
         self.__interface.transaction.autocommit = True
         self.__interface.set_main_loop(GtkMainLoop())
+
     def showMenu(self):
         if self.__interface.project.metamodel.uri == "urn:umlfri.org:metamodel:DRAmodel":
             self.__type="DRA"
@@ -58,6 +87,7 @@ class DRA:
                 self.__windows=[]
                 self.__menu.visible = False
             self.__type="ine"
+
     def menuConnect(self):
         if self.__menuConnect is None:
             self.__gtkBuilder=gtk.Builder()
@@ -124,6 +154,7 @@ class DRA:
             entry=self.__gtkBuilder.get_object("entry6")
             entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#FFFFFF"))
             entry.set_editable(True)
+
     def oracle(self):
         type=self.__combobox.get_active()
         if type is 1:
@@ -140,6 +171,7 @@ class DRA:
 
     def cancel(self):
         self.__menuConnect.hide()
+
     def connect(self):
         host=self.__gtkBuilder.get_object("entry1").get_text()
         database=self.__gtkBuilder.get_object("entry2").get_text()
@@ -190,6 +222,7 @@ class DRA:
             for m in menu:
                 if m.gui_id=="connect":
                     m.enabled=False
+
     def disconnect(self):
         a=Connection()
         a.disconnect()
@@ -203,6 +236,7 @@ class DRA:
             if m.gui_id=="execute":
                 m.enabled=False
         self.__menuConnect=None
+
     def execute(self):
         a = self.__interface.current_diagram.selected
         tem=list(a)
@@ -235,6 +269,7 @@ class DRA:
             attention=InfoBarDemo("Connect error","You must first connect to database","Warning")
             self.__windows.append(attention)
             attention.show()
+
     def create(self,trunk,ob=None):
         name= trunk.object.type.name
         connections=trunk.connections

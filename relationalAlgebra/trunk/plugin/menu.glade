@@ -32,6 +32,21 @@
             <property name="n_rows">10</property>
             <property name="n_columns">3</property>
             <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
               <object class="GtkLabel" id="label1">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
@@ -213,7 +228,6 @@
             <child>
               <object class="GtkCheckButton" id="checkbutton1">
                 <property name="label" translatable="yes">Use same login</property>
-                <property name="use_action_appearance">False</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">False</property>
                 <property name="no_show_all">True</property>
@@ -321,21 +335,6 @@
                 <property name="bottom_attach">10</property>
               </packing>
             </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
           </object>
           <packing>
             <property name="expand">True</property>
@@ -352,7 +351,6 @@
             <child>
               <object class="GtkButton" id="button1">
                 <property name="label" translatable="yes">Ok</property>
-                <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
@@ -367,7 +365,6 @@
             <child>
               <object class="GtkButton" id="button2">
                 <property name="label" translatable="yes">Cancel</property>
-                <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>

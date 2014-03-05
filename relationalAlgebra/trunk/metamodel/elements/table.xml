@@ -17,13 +17,7 @@
 		
 		<Align align="center center">
 		<VBox>
-        <TextBox text="#self.name"></TextBox>		
-			<Condition condition="#self.alias">
-				<VBox>
-					<TextBox text=" AS " />
-					<TextBox text="#self.alias" />
-				</VBox>
-			</Condition>
+			<TextBox text="#self.name"></TextBox>					
 			</VBox>
 		</Align>
 </HBox>
