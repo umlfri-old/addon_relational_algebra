@@ -2,7 +2,4 @@
     <Attribute id="name" name="Name" >
 		<Str/>
 	</Attribute>
-	<Attribute id="alias" name="Alias">
-		<Str/>
-	</Attribute>
 </Domain>
