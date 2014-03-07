@@ -7,6 +7,7 @@ from attention import *
 import math
 from error import *
 import threading
+from sql_parser import Sql_parser
 
 class DRA:
     def __init__(self,interface):
@@ -23,7 +24,7 @@ class DRA:
         self.__submenu.add_menu_item('connect', lambda x:self.menuConnect(), -1, 'Connect to database')
         self.__submenu.add_menu_item('sqlcommand',lambda x:self.showSqlEditor(), -1, 'Sql command')
         self.__submenu.add_menu_item('execute',lambda x:self.execute(), -1, 'Execute')
-
+        self.__parser = Sql_parser()
 
     def showSqlEditor(self):
         if self.__editorWindow is None:
@@ -32,6 +33,7 @@ class DRA:
             self.__editorWindow=self.__gtkBuilder.get_object("window1")
             connect_button=self.__gtkBuilder.get_object("button1")
             cancel_button=self.__gtkBuilder.get_object("button2")
+            self.__sqlCommand = self.__gtkBuilder.get_object("text_view")
             connect_button.connect("clicked",lambda x:self.parseSql())
             cancel_button.connect("clicked",lambda x:self.cancelEditor())
             self.__editorWindow.set_keep_above(True)
@@ -47,7 +49,13 @@ class DRA:
         self.__editorWindow.hide()
 
     def parseSql(self):
-        pass
+        self.__diagram = list(self.__interface.project.root.diagrams)[0]
+        self.__editorWindow.hide()
+        buffer = self.__sqlCommand.get_buffer()
+        command = buffer.get_text(buffer.get_start_iter(),buffer.get_end_iter())
+        composite = self.__parser.parse(command)
+        composite.paint(self.__interface, self.__diagram)
+
 
     def pluginMain(self):
         self.__interface.add_notification('project-opened', self.showMenu)
