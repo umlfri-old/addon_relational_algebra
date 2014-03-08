@@ -18,6 +18,14 @@ class Column:
     def get_alias_name(self):
         return self.__alias_name
 
+    def __str__(self):
+        str = []
+        if self.__table_name is not None and self.__table_name != "":
+            str.append(self.__table_name)
+        if self.__column_name is not None and self.__column_name != "":
+            str.append(self.__column_name)
+        return ".".join(str)
+
 
 class Table_object:
     def __init__(self, table_name, alias_name, type):
@@ -91,3 +99,6 @@ class Select:
 
     def get_joins(self):
         return self.__joins
+
+    def get_columns(self):
+        return self.__columns
