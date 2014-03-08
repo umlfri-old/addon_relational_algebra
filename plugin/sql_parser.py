@@ -138,7 +138,7 @@ class Sql_parser:
             i = condition_statement.token_index(actual_object)
             actual_object = condition_statement.token_next(i)
             if actual_object is None or (isinstance(actual_object.ttype, type(Tokens.Punctuation))
-                                         and actual_object.normalized == ")"):
+                                          and (actual_object.normalized == ")" or actual_object.normalized == ";")):
                 break
             i = condition_statement.token_index(actual_object)
             if isinstance(actual_object.ttype, type(Tokens.Keyword)) and (actual_object.normalized == "AND"
@@ -203,7 +203,7 @@ class Sql_parser:
             raise Exception("invalid condition syntax")
 
 
-    def get_tables(self,object, i):
+    def get_tables(self, object, i):
         actual_object = object.token_next(i)
         if isinstance(actual_object.ttype, type(Tokens.Keyword)):
             i = object.token_index(actual_object)
@@ -212,14 +212,48 @@ class Sql_parser:
         if isinstance(actual_object, Objects.Identifier):
             tables.append(self.process_table(actual_object, True))
         elif isinstance(actual_object,Objects.IdentifierList):
+            print "tu som "
             for y, identifier in enumerate(actual_object.get_identifiers()):
                 if y == 0:
                     tables.append(self.process_table(identifier, True))
                 else:
-                    tables.append(self.process_table(identifier))
-        return tables,object.token_index(actual_object)
+                    if isinstance(identifier, Objects.Parenthesis):
+                        table = copy.deepcopy(identifier)
+                        table.tokens.pop(0)
+                        table.tokens.pop(len(table.tokens) - 1)
+                        i = object.token_index(actual_object)
+                        actual_object = object.token_next(i)
+                        if isinstance(actual_object,Objects.Identifier):
+                            tables.append(Table_object(self.parse_select(table), actual_object.normalized, "KART"))
+                        elif isinstance(actual_object, Objects.IdentifierList):
+                            for y, identifier in enumerate(actual_object.get_identifiers()):
+                                if y == 0:
+                                    tables.append(Table_object(self.parse_select(table), actual_object.normalized, "KART"))
+                                else:
+                                    tables.append(self.process_table(identifier))
+                        else:
+                            tables.append(Table_object(self.parse_select(table), None, "KART"))
+                    else:
+                        tables.append(self.process_table(identifier))
+        elif isinstance(actual_object, Objects.Parenthesis):
+            table = copy.deepcopy(actual_object)
+            table.tokens.pop(0)
+            table.tokens.pop(len(table.tokens) - 1)
+            i = object.token_index(actual_object)
+            actual_object = object.token_next(i)
+            if isinstance(actual_object,Objects.Identifier):
+                tables.append(Table_object(self.parse_select(table), actual_object.normalized, "FIRST"))
+            elif isinstance(actual_object, Objects.IdentifierList):
+                for y, identifier in enumerate(actual_object.get_identifiers()):
+                    if y == 0:
+                        tables.append(Table_object(self.parse_select(table), actual_object.normalized, "FIRST"))
+                    else:
+                        tables.append(self.process_table(identifier))
+            else:
+                tables.append(Table_object(self.parse_select(table), None, "FIRST"))
+        return tables, object.token_index(actual_object)
 
-    def get_columns(self,object, i):
+    def get_columns(self, object, i):
         actual_object = object.token_next(i)
         columns = []
         if isinstance(actual_object, Objects.Identifier):
@@ -229,8 +263,6 @@ class Sql_parser:
                 columns.append(self.process_column(identifier))
         elif actual_object.ttype in (Tokens.Literal.String.Single, Tokens.Literal.Number.Integer, Tokens.Literal.Number.Float):
             columns.append(Column(None, actual_object.normalized, None))
-        elif isinstance(actual_object.ttype, type(Tokens.Wildcard)):
-            columns.append(Column(None, "*", None))
 
         return columns, object.token_index(actual_object)
 
@@ -281,9 +313,16 @@ class Sql_parser:
                 join_com.set(self.process_ancestor(join))
                 join_com.set_condition(join.get_conditions())
                 composite = join_com
-
         #process conditions
-        return self.process_conditions(select.get_conditions(),composite)
+        composite =  self.process_conditions(select.get_conditions(), composite)
+
+        #process columns
+        if select.get_columns() is not None and len(select.get_columns()) != 0:
+            projection = Projection(select.get_columns())
+            projection.set(composite)
+            composite = projection
+
+        return composite
 
 
     def process_conditions(self,conditions, composite):
@@ -337,10 +376,3 @@ class Sql_parser:
         parsed = sqlparse.parse(sqlparse.format(command, reindent=True,keyword_case="upper"))
         select = self.parse_select(parsed[0])
         return self.process_select(select)
-#
-#parsed = sqlparse.parse("select t.nieco as fd from \"mytable\" as nieco,table2 as m,table3 "
-#                        "WHERE 1 = 2 and 3 = 4")
-#print(parsed[0].tokens)
-#select = parse_select(parsed[0])
-#composite = process_select(select)
-#print composite
