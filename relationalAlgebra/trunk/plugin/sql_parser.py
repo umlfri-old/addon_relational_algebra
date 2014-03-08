@@ -34,7 +34,7 @@ class Sql_parser:
         return object.token_index(actual_object)
 
 
-    def get_joins(self,object, i):
+    def get_joins(self, object, i):
         conditions = None
         actual_object = object.token_next(i)
         joins = []
@@ -47,6 +47,7 @@ class Sql_parser:
             #JOIN with SUBSELECT
             if isinstance(table,Objects.Parenthesis):
                 i = object.token_index(table)
+                table = copy.deepcopy(table)
                 table.tokens.pop(0)
                 table.tokens.pop(len(table.tokens)-1)
                 table_name = self.parse_select(table)
@@ -54,6 +55,17 @@ class Sql_parser:
                 type_join = object.token_next(object.token_index(alias_name))
                 i = object.token_index(type_join)
                 condition = object.token_next(i)
+            elif isinstance(table.token_first(), Objects.Parenthesis):
+                table_name = copy.deepcopy(table.token_first())
+                table_name.tokens.pop(0)
+                table_name.tokens.pop(len(table_name.tokens)-1)
+                table_name =  self.parse_select(table_name)
+                alias_name = table.token_next_by_instance(0,Objects.Identifier)
+                type_join = object.token_next(object.token_index(table))
+                i = object.token_index(type_join)
+                condition = object.token_next(i)
+
+
             else:
                 i = object.token_index(table)
                 type_join = object.token_next(i)
@@ -63,13 +75,13 @@ class Sql_parser:
                 if isinstance(subselect,Objects.Parenthesis):
                     subselect.tokens.pop(0)
                     subselect.tokens.pop(len(subselect.tokens)-1)
-                    table_name = self.parse_select(subselect)
+                    table_name =  self.parse_select(subselect)
                 else:
                     table_name = table.get_real_name()
                 alias_name = table.get_alias()
 
             if isinstance(type_join.ttype, type(Tokens.Keyword)) and type_join.normalized == "ON":
-                conditions = self.process_condition_join(condition)
+                conditions =  self.process_condition_join(condition)
             elif isinstance(type_join.ttype, type(Tokens.Keyword)) and type_join.normalized == "USING":
                 raise Exception("using is not supported")
 
