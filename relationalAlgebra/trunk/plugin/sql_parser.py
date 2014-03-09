@@ -132,8 +132,8 @@ class Sql_parser:
                     conditions.append(self.parse_condition(actual_object))
             #NOT EXISTS CONDITION
             elif isinstance(actual_object, Objects.Token) and actual_object.normalized == "NOT":
-                function = condition_statement.token_next_by_instance(condition_statement.token_index(actual_object), Objects.Function)
-                function_statement = copy.deepcopy(function.token_next(0))
+                function = condition_statement.token_next_by_instance(condition_statement.token_index(actual_object), (Objects.Function, Objects.Parenthesis))
+                function_statement = copy.deepcopy(function)
                 actual_object = function
                 function_statement.tokens.pop(0)
                 function_statement.tokens.pop(len(function_statement.tokens)-1)
@@ -360,12 +360,20 @@ class Sql_parser:
         return left_operand
 
 
-    def process_operand(self,operand, composite):
+    def process_operand(self, operand, composite):
         if isinstance(operand, list):
             return self.process_conditions(operand, composite)
-
+        if isinstance(operand,Condition) and (operand.get_operator() in ("EXISTS","NOT EXISTS")):
+            selection = self.process_select(operand.get_left_operand())
+            if operand.get_operator() == "EXISTS":
+                operation = Intersection()
+            else:
+                operation = Difference()
+            operation.set(composite)
+            operation.set(selection)
+            return operation
         if isinstance(operand, Condition):
-            selection =  Selection(operand.get_left_operand(), operand.get_operator(), operand.get_right_operand())
+            selection = Selection(operand.get_left_operand(), operand.get_operator(), operand.get_right_operand())
             selection.set(composite)
             return selection
 

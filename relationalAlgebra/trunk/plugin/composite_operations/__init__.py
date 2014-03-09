@@ -7,3 +7,5 @@ from Join import Join
 from Selection import Selection
 from Union import Union
 from Projection import Projection
+from Intersection import Intersection
+from Difference import Difference
