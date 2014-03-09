@@ -104,7 +104,7 @@ class Sql_parser:
         return conditions,object.token_index(condition_statement)
 
 
-    def parse_parenthesis(self,condition_statement):
+    def parse_parenthesis(self, condition_statement):
         conditions = []
         i = 0
         try:
@@ -119,20 +119,26 @@ class Sql_parser:
             #NOT IN condition
             elif isinstance(actual_object, Objects.Identifier):
                 next = condition_statement.token_next(condition_statement.token_index(actual_object)+1)
-                if next is not None and next.normalized == "NOT":
-                    function = condition_statement.token_next_by_instance(0, Objects.Function)
-                    function_statement = copy.deepcopy(function.token_next(0))
-                    if isinstance(function_statement, Objects.Parenthesis) and isinstance(function_statement.token_next(0), Objects.IdentifierList):
+
+                function = condition_statement.token_next_by_instance(0, (Objects.Function, Objects.Parenthesis))
+
+                function_statement = copy.deepcopy(function)
+                if isinstance(function_statement, Objects.Parenthesis) and isinstance(function_statement.token_next(0), Objects.IdentifierList):
+                    if next is not None and next.normalized == "NOT":
                         conditions.append(Condition(actual_object, "NOT IN", function_statement.normalized))
-                    elif isinstance(function_statement, Objects.Parenthesis) and isinstance(function_statement.token_next(0).ttype, type(Tokens.DML)):
-                        function_statement.tokens.pop(0)
-                        function_statement.tokens.pop(len(function_statement.tokens)-1)
+                    else:
+                        conditions.append(Condition(actual_object, "IN", function_statement.normalized))
+                elif isinstance(function_statement, Objects.Parenthesis) and isinstance(function_statement.token_next(0).ttype, type(Tokens.DML)):
+                    function_statement.tokens.pop(0)
+                    function_statement.tokens.pop(len(function_statement.tokens)-1)
+                    if next is not None and next.normalized == "NOT":
                         conditions.append(Condition(actual_object, "NOT IN", self.parse_select(function_statement)))
-                else:
-                    conditions.append(self.parse_condition(actual_object))
+                    else:
+                        conditions.append(Condition(actual_object, "IN", self.parse_select(function_statement)))
+                actual_object = function
             #NOT EXISTS CONDITION
             elif isinstance(actual_object, Objects.Token) and actual_object.normalized == "NOT":
-                function = condition_statement.token_next_by_instance(condition_statement.token_index(actual_object), (Objects.Function, Objects.Parenthesis))
+                function = condition_statement.token_next_by_instance(condition_statement.token_index(actual_object), (Objects.Function,Objects.Parenthesis))
                 function_statement = copy.deepcopy(function)
                 actual_object = function
                 function_statement.tokens.pop(0)
@@ -150,7 +156,7 @@ class Sql_parser:
             i = condition_statement.token_index(actual_object)
             actual_object = condition_statement.token_next(i)
             if actual_object is None or (isinstance(actual_object.ttype, type(Tokens.Punctuation))
-                                          and (actual_object.normalized == ")" or actual_object.normalized == ";")):
+                                         and (actual_object.normalized == ")" or actual_object.normalized == ";")):
                 break
             i = condition_statement.token_index(actual_object)
             if isinstance(actual_object.ttype, type(Tokens.Keyword)) and (actual_object.normalized == "AND"
@@ -183,24 +189,14 @@ class Sql_parser:
                 raise Exception("not supported OR in JOIN condition")
 
         return conditions
-    def parse_condition(self,condition):
+
+    def parse_condition(self, condition):
         if isinstance(condition, Objects.Comparison):
             first_operand = condition.left
             i = condition.token_index(first_operand)
             operator = condition.token_next(i)
             second_operand = condition.right
             return Condition(first_operand, operator, second_operand)
-        #condition with IN
-        elif isinstance(condition, Objects.Identifier):
-            first_operand = condition.token_first()
-            operator = condition.token_next(condition.token_index(first_operand))
-            second_operand = operator.token_next(0)
-            if isinstance(second_operand, Objects.Parenthesis) and isinstance(second_operand.token_next(0), Objects.IdentifierList):
-                return Condition(first_operand, "IN", second_operand.normalized)
-            elif isinstance(second_operand, Objects.Parenthesis) and isinstance(second_operand.token_next(0).ttype, type(Tokens.DML)):
-                second_operand.tokens.pop(0)
-                second_operand.tokens.pop(len(second_operand.tokens) - 1)
-                return Condition(first_operand, "IN", self.parse_select(second_operand))
         #condition with EXISTS
         elif isinstance(condition,Objects.Function):
             function_statement = condition.token_next(0)
@@ -210,7 +206,7 @@ class Sql_parser:
         elif isinstance(condition,Objects.Parenthesis):
             condition.tokens.pop(0)
             condition.tokens.pop(len(condition.tokens)-1)
-            return Condition(self.parse_select(condition), "EXISTS",None)
+            return Condition(self.parse_select(condition), "EXISTS", None)
         else:
             raise Exception("invalid condition syntax")
 
@@ -224,7 +220,6 @@ class Sql_parser:
         if isinstance(actual_object, Objects.Identifier):
             tables.append(self.process_table(actual_object, True))
         elif isinstance(actual_object,Objects.IdentifierList):
-            print "tu som "
             for y, identifier in enumerate(actual_object.get_identifiers()):
                 if y == 0:
                     tables.append(self.process_table(identifier, True))
@@ -363,16 +358,39 @@ class Sql_parser:
     def process_operand(self, operand, composite):
         if isinstance(operand, list):
             return self.process_conditions(operand, composite)
-        if isinstance(operand,Condition) and (operand.get_operator() in ("EXISTS","NOT EXISTS")):
-            selection = self.process_select(operand.get_left_operand())
-            if operand.get_operator() == "EXISTS":
-                operation = Intersection()
+
+        if isinstance(operand, Condition) and (operand.get_operator() in ("EXISTS", "NOT EXISTS", "IN", "NOT IN")
+                                               and (isinstance(operand.get_right_operand(), Select) or isinstance(operand.get_left_operand(),Select))):
+            if operand.get_operator() == "IN":
+                condition = operand.get_right_operand().get_conditions()
+                if len(operand.get_right_operand().get_columns()) != 1:
+                    raise Exception("Error at IN statement")
+                if len(condition) == 0:
+                    condition.append(Condition(operand.get_right_operand().get_columns()[0],"=",operand.get_left_operand()))
+                else:
+                    condition.append("AND")
+                    condition.append(Condition(operand.get_right_operand().get_columns()[0].__str__(),"=",operand.get_left_operand().__str__()))
+                operand.get_right_operand().set_columns(None)
+                operand.get_right_operand().set_conditions(None)
+                operand.set_left_operand(operand.get_right_operand())
+                operand.set_right_operand(condition)
+                operand.set_operator("EXISTS")
+
+            elif operand.get_operator() == "EXISTS":
+                operand.set_right_operand(operand.get_left_operand().get_conditions())
+                operand.get_left_operand().set_conditions(None)
+
+            product = Product()
+            product.set(composite)
+            product.set(self.process_select(operand.get_left_operand()))
+
+            if operand.get_right_operand() is None or len(operand.get_right_operand()) != 0:
+                selection = self.process_conditions(operand.get_right_operand(),product)
+                return selection
             else:
-                operation = Difference()
-            operation.set(composite)
-            operation.set(selection)
-            return operation
-        if isinstance(operand, Condition):
+                return product
+
+        elif isinstance(operand, Condition):
             selection = Selection(operand.get_left_operand(), operand.get_operator(), operand.get_right_operand())
             selection.set(composite)
             return selection

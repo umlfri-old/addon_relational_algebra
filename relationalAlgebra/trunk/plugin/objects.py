@@ -26,7 +26,6 @@ class Column:
             str.append(self.__column_name)
         return ".".join(str)
 
-
 class Table_object:
     def __init__(self, table_name, alias_name, type):
         self.__table_name = table_name
@@ -83,6 +82,16 @@ class Condition:
     def get_operator(self):
         return self.__operator
 
+    def set_left_operand(self, operand):
+        self.__left_operand = operand
+
+    def set_right_operand(self, operand):
+        self.__right_operand = operand
+
+    def set_operator(self, operator):
+        self.__operator = operator
+
+
 
 class Select:
     def __init__(self, columns, tables, joins, conditions):
@@ -102,3 +111,9 @@ class Select:
 
     def get_columns(self):
         return self.__columns
+
+    def set_columns(self, columns):
+        self.__columns = columns
+
+    def set_conditions(self, conditions):
+        self.__conditions = conditions
