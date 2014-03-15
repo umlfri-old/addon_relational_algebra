@@ -2,9 +2,10 @@ __author__ = 'Michal'
 
 
 class Rename:
-    def __init__(self, alias,ancestor=None):
+    def __init__(self, alias, column=None, ancestor=None):
         self.__alias = alias
         self.__ancestor = ancestor
+        self.__column = column
         self.__name = "Rename"
         self.__element = None
 
@@ -22,6 +23,8 @@ class Rename:
         if self.__element is None:
             element = interface.project.metamodel.elements[self.__name]
             el = diagram.create_element(element)
-            el.object.values['name'] = self.__alias.__str__()
+            el.object.values['alias_name'] = self.__alias.__str__()
+            if self.__column is not None and self.__column != "":
+                el.object.values['name'] = self.__column.__str__()
             self.__element = el
         return self.__element

@@ -1,6 +1,9 @@
 <Domain id="rename" xmlns="http://umlfri.kst.fri.uniza.sk/xmlschema/metamodel.xsd" >
-    <Attribute id="name" name="Name" >
+    <Attribute id="name" name="Attribute name" >
 		<Str/>
+	</Attribute>
+	<Attribute id="alias_name" name="Alias name">
+		<Str />
 	</Attribute>
      
 </Domain>

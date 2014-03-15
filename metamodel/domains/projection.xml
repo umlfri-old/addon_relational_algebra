@@ -8,9 +8,6 @@
 				<Attribute id="meno" name="Meno">
 					<Str/>
 				</Attribute>
-				<Attribute id="alias" name="Alias">
-					<Str/>
-				</Attribute>
 			</Domain>
          </List>
      </Attribute>

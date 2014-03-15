@@ -20,12 +20,6 @@
 												<TextBox text=", "></TextBox>
 											</Condition>
 											<TextBox text="#meno"></TextBox>
-											<Condition condition="#alias">
-												<VBox>
-													<TextBox text=" AS " />
-													<TextBox text="#alias" />
-												</VBox>
-											</Condition>
 										</VBox>
 									</Loop>
                                 </VBox>

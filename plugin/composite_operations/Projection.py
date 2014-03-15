@@ -1,4 +1,7 @@
 __author__ = 'Michal'
+
+from Rename import Rename
+
 class Projection:
     def __init__(self, data):
         self.__data = data
@@ -24,9 +27,6 @@ class Projection:
             for column in self.__data:
                 c = {}
                 c['meno'] = column.__str__()
-                alias = column.get_alias_name()
-                if alias is not None and alias != "":
-                    c['alias'] = alias
                 columns.append(c)
             el.object.values['c'] = columns
             self.__element = el
