@@ -1,5 +1,8 @@
 <Domain id="table" xmlns="http://umlfri.kst.fri.uniza.sk/xmlschema/metamodel.xsd" >
-    <Attribute id="name" name="Name" >
+    <Attribute id="name" name="Name" hidden="true">
+		<Str/>
+	</Attribute>
+	<Attribute id="table_name" name="Table name" >
 		<Str/>
 	</Attribute>
 </Domain>

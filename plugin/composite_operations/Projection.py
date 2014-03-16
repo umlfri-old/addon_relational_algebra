@@ -1,6 +1,5 @@
 __author__ = 'Michal'
 
-from Rename import Rename
 
 class Projection:
     def __init__(self, data):

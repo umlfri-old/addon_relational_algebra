@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from org.umlfri.api.mainLoops import GtkMainLoop
 from connect import *
-from operations import *
+from composite_operations import *
 from list import *
 from attention import *
 import math
@@ -25,14 +25,15 @@ class DRA:
         self.__submenu.add_menu_item('sqlcommand',lambda x:self.showSqlEditor(), -1, 'Sql command')
         self.__submenu.add_menu_item('execute',lambda x:self.execute(), -1, 'Execute')
         self.__parser = Sql_parser()
+        self.__elements = {}
 
     def showSqlEditor(self):
         if self.__editorWindow is None:
-            self.__gtkBuilder=gtk.Builder()
+            self.__gtkBuilder = gtk.Builder()
             self.__gtkBuilder.add_from_file("share\\addons\\DRA\\plugin\\editor.glade")
-            self.__editorWindow=self.__gtkBuilder.get_object("window1")
-            connect_button=self.__gtkBuilder.get_object("button1")
-            cancel_button=self.__gtkBuilder.get_object("button2")
+            self.__editorWindow = self.__gtkBuilder.get_object("window1")
+            connect_button = self.__gtkBuilder.get_object("button1")
+            cancel_button = self.__gtkBuilder.get_object("button2")
             self.__sqlCommand = self.__gtkBuilder.get_object("text_view")
             connect_button.connect("clicked",lambda x:self.parseSql())
             cancel_button.connect("clicked",lambda x:self.cancelEditor())
@@ -147,6 +148,7 @@ class DRA:
             self.__password.delete_text(0,len(self.__password.get_text()))
             self.__password2.delete_text(0,len(self.__password2.get_text()))
             self.__menuConnect.show_all()
+
     def check(self):
         if self.__check.get_active():
             entry=self.__gtkBuilder.get_object("entry5")
@@ -246,141 +248,151 @@ class DRA:
         self.__menuConnect=None
 
     def execute(self):
+        self.__elements = {}
         a = self.__interface.current_diagram.selected
-        tem=list(a)
-        c=Connection()
-        o=None
-        if c.getTyp()!= "":
+        tem = list(a)
+        c = Connection()
+        o = None
+        if c.getTyp() != "":
             if len(tem) == 1:
-                select=tem.pop()
+                select = tem.pop()
                 try:
-                    object=self.create(select)
-                    o=object.execute()
+                    object = self.create(select)
+                    o = object.execute()
                 except CompileError as error:
-                    attention=InfoBarDemo(error.getName(),error.getValue(),"Warning")
+                    attention = InfoBarDemo(error.getName(), error.getValue(), "Warning")
                     self.__windows.append(attention)
                     attention.show()
                 if o is not None:
                     if not o.getHeader():
-                        attention=InfoBarDemo("Relation error","Relation is empty","Warning")
+                        attention = InfoBarDemo("Relation error", "Relation is empty", "Warning")
                         self.__windows.append(attention)
                         attention.show()
                     else:
                         self.__windows.append(PyApp(o))
                         gtk.main()
             else:
-                attention=InfoBarDemo("Execute error","You must select one element","Warning")
+                attention = InfoBarDemo("Execute error", "You must select one element"," Warning")
                 self.__windows.append(attention)
                 attention.show()
 
         else:
-            attention=InfoBarDemo("Connect error","You must first connect to database","Warning")
+            attention = InfoBarDemo("Connect error", "You must first connect to database", "Warning")
             self.__windows.append(attention)
             attention.show()
 
-    def create(self,trunk,ob=None):
-        name= trunk.object.type.name
-        connections=trunk.connections
-        list_connection=list(connections)
-        list_destination=[]
-        list_source=[]
-        for connect in list_connection:
-            if connect.destination.object.name == trunk.object.name :
-                list_destination.append(connect)
-            else:
-                list_source.append(connect)
-        if len(list_source)>1:
-            raise CompileError(name + " "+ trunk.object.name+" have to much output connections","Compile error")
-        if name=="Table":
-            a=Connection()
-            if len(list_destination) > 1:
-                raise CompileError("Table "+trunk.object.values["name"]+" have wrong number of connections","Compile error")
-            else:
-                object=Table(a,trunk.object.values["name"])
-        elif name=="Union":
-            if len(list_destination) != 2:
-                raise CompileError("Union "+trunk.object.values["name"]+" have wrong number of connections","Compile error")
-            else:
-                object=Union(trunk.object.values["name"])
-        elif name=="Intersection":
-            if len(list_destination) != 2:
-                raise CompileError("Intersection "+trunk.object.values["name"]+" have wrong number of connections","Compile error")
-            else:
-                object=Intersection(trunk.object.values["name"])
-        elif name=="Product":
-            if len(list_destination) != 2:
-                raise CompileError("Product "+trunk.object.values["name"]+" have wrong number of connections","Compile error")
-            else:
-                object=Product(trunk.object.values["name"])
-        elif name=="Difference":
-            if len(list_destination) != 2:
-                raise CompileError("Difference "+trunk.object.values["name"]+" have wrong number of connections","Compile error")
-            else:
-                object=Difference(trunk.object.values["name"])
-        elif name=="Division":
-            if len(list_destination) != 2:
-                raise CompileError("Intersection "+trunk.object.values["name"]+" have wrong number of connections","Compile error")
-            else:
-                object=Division(trunk.object.values["name"])
-        elif name=="Selection":
-            if len(list_destination) != 1:
-                raise CompileError("Intersection "+trunk.object.values["name"]+" have wrong number of connections","Compile error")
-            else:
-                object=Selection(trunk.object.values["name"],trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"])
-        elif name=="Projection":
-            if len(list_destination) != 1:
-                raise CompileError("Intersection "+trunk.object.values["name"]+" have wrong number of connections","Compile error")
-            else:
-                object=Projection(trunk.object.values["name"],trunk.object.values["c"])
-        elif name=="Inner join":
-            if len(list_destination) != 2:
-                raise CompileError("Intersection "+trunk.object.values["name"]+" have wrong number of connections","Compile error")
-            else:
-                object=Join(trunk.object.values["name"],trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"])
-        elif name=="Left outter join":
-            if len(list_destination) != 2:
-                raise CompileError("Intersection "+trunk.object.values["name"]+" have wrong number of connections","Compile error")
-            else:
-                object=Join(trunk.object.values["name"],trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"],True)
-        elif name=="Right outter join":
-            if len(list_destination) != 2:
-                raise CompileError("Intersection "+trunk.object.values["name"]+" have wrong number of connections","Compile error")
-            else:
-                object=Join(trunk.object.values["name"],trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"],right=True)
-        elif name=="Full outter join":
-            if len(list_destination) != 2:
-                raise CompileError("Intersection "+trunk.object.values["name"]+" have wrong number of connections","Compile error")
-            else:
-                object=Join(trunk.object.values["name"],trunk.object.values["column1"],trunk.object.values["condition"],trunk.object.values["column2"],True,True)
-        else:
-            raise CompileError("You cannot select connection","Compile error")
-        if ob is not None:
-            ob.set(object)
-        if len(list_destination) is not 0:
-            source_position=trunk.position
-            left_object=None
-            right_object=None
-            for i in range(0,len(list_destination)):
-                conn=list_destination[i]
-                object1=conn.source
-                object1_position=object1.position
-                corner=math.atan2(source_position[1]-object1_position[1],source_position[0]-object1_position[0])
-                if corner<0:
-                    raise CompileError("Wrong orientation of diagram","Compile error")
-                if left_object is None:
-                    left_object=object1
-                    if len(list_destination)!=1:
-                        conn2=list_destination[i+1]
-                        right_object=conn2.source
+    def create(self, trunk, ob=None):
+        name = trunk.object.type.name
+        reused = False
+        elementName = trunk.object.values["name"]
+        if elementName in self.__elements:
+            object = self.__elements[name]
+            reused = True
+        if not reused:
+            connections = trunk.connections
+            list_connection = list(connections)
+            list_destination = []
+            list_source = []
+            for connect in list_connection:
+                if connect.destination.object.name == trunk.object.name:
+                    list_destination.append(connect)
                 else:
-                    left_object_position=left_object.position
-                    if math.atan2(source_position[1]-left_object_position[1],source_position[0]-left_object_position[0])>corner:
-                        right_object=left_object
-                        left_object=object1
-            if left_object.object.name != trunk.object.name:
-                self.create(left_object,object)
-            if right_object is not None:
-                if right_object.object.name != trunk.object.name:
-                    self.create(right_object,object)
+                    list_source.append(connect)
+            #if len(list_source) > 1:
+            #    raise CompileError(name + " "+trunk.object.name + " have to much output connections", "Compile error")
+            if name == "Table":
+                a = Connection()
+                if len(list_destination) > 1:
+                    raise CompileError("Table "+trunk.object.values["table_name"]+" have wrong number of connections", "Compile error")
+                else:
+                    object = Table(a, trunk.object.values["table_name"])
+            elif name == "Union":
+                if len(list_destination) != 2:
+                    raise CompileError("Union "+trunk.object.values["name"]+" have wrong number of connections", "Compile error")
+                else:
+                    object = Union()
+            elif name == "Intersection":
+                if len(list_destination) != 2:
+                    raise CompileError("Intersection "+trunk.object.values["name"]+" have wrong number of connections", "Compile error")
+                else:
+                    object = Intersection()
+            elif name == "Product":
+                if len(list_destination) != 2:
+                    raise CompileError("Product "+trunk.object.values["name"]+" have wrong number of connections", "Compile error")
+                else:
+                    object = Product()
+            elif name == "Difference":
+                if len(list_destination) != 2:
+                    raise CompileError("Difference "+trunk.object.values["name"]+" have wrong number of connections", "Compile error")
+                else:
+                    object = Difference()
+            elif name == "Division":
+                if len(list_destination) != 2:
+                    raise CompileError("Division "+trunk.object.values["name"]+" have wrong number of connections", "Compile error")
+                else:
+                    object = Division()
+            elif name == "Selection":
+                if len(list_destination) != 1:
+                    raise CompileError("Selection "+trunk.object.values["name"]+" have wrong number of connections", "Compile error")
+                else:
+                    object = Selection(trunk.object.values["column1"], trunk.object.values["condition"], trunk.object.values["column2"])
+            elif name == "Projection":
+                if len(list_destination) != 1:
+                    raise CompileError("Projection "+trunk.object.values["name"]+" have wrong number of connections", "Compile error")
+                else:
+                    object = Projection(trunk.object.values["c"])
+            elif name == "Inner join":
+                if len(list_destination) != 2:
+                    raise CompileError("Inner join "+trunk.object.values["name"]+" have wrong number of connections", "Compile error")
+                else:
+                    object = Join(trunk.object.values["cond"])
+            elif name == "Left outter join":
+                if len(list_destination) != 2:
+                    raise CompileError("Left outter join "+trunk.object.values["name"]+" have wrong number of connections", "Compile error")
+                else:
+                    object = Join(trunk.object.values["cond"], True)
+            elif name == "Right outter join":
+                if len(list_destination) != 2:
+                    raise CompileError("Right outter join "+trunk.object.values["name"]+" have wrong number of connections", "Compile error")
+                else:
+                    object = Join(trunk.object.values["cond"], right=True)
+            elif name == "Full outter join":
+                if len(list_destination) != 2:
+                    raise CompileError("Full outter join "+trunk.object.values["name"]+" have wrong number of connections", "Compile error")
+                else:
+                    object = Join(trunk.object.values["cond"], True, True)
+            else:
+                raise CompileError("You cannot select connection", "Compile error")
+            if ob is not None:
+                ob.set(object)
+            if len(list_destination) is not 0:
+                source_position = trunk.position
+                left_object = None
+                right_object = None
+                for i in range(0, len(list_destination)):
+                    conn = list_destination[i]
+                    object1 = conn.source
+                    object1_position = object1.position
+                    corner = math.atan2(source_position[1]-object1_position[1], source_position[0]-object1_position[0])
+                    if corner < 0:
+                        raise CompileError("Wrong orientation of diagram", "Compile error")
+                    if left_object is None:
+                        left_object = object1
+                        if len(list_destination) != 1:
+                            conn2 = list_destination[i+1]
+                            right_object = conn2.source
+                    else:
+                        left_object_position = left_object.position
+                        if math.atan2(source_position[1]-left_object_position[1], source_position[0]-left_object_position[0]) > corner:
+                            right_object = left_object
+                            left_object = object1
+                if left_object.object.name != trunk.object.name:
+                    self.create(left_object, object)
+                if right_object is not None:
+                    if right_object.object.name != trunk.object.name:
+                        self.create(right_object, object)
+        else:
+            if ob is not None:
+                ob.set(object)
         if ob is None:
             return object

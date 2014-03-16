@@ -25,6 +25,6 @@ class Rename:
             el = diagram.create_element(element)
             el.object.values['alias_name'] = self.__alias.__str__()
             if self.__column is not None and self.__column != "":
-                el.object.values['name'] = self.__column.__str__()
+                el.object.values['attribute_name'] = self.__column.__str__()
             self.__element = el
         return self.__element

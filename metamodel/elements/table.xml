@@ -17,7 +17,7 @@
 		
 		<Align align="center center">
 		<VBox>
-			<TextBox text="#self.name"></TextBox>					
+			<TextBox text="#self.table_name"></TextBox>					
 			</VBox>
 		</Align>
 </HBox>
