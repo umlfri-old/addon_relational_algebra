@@ -5,7 +5,7 @@ class PyApp(gtk.Window):
     def __init__(self,data):
         super(PyApp, self).__init__()
         self.__data=data
-        self.__header=self.__data.getColumnsName()
+        self.__header=self.__data.getHeader()
         self.set_size_request(180, 200)
         self.destroy_with_parent
         self.set_resizable(True)
@@ -33,17 +33,14 @@ class PyApp(gtk.Window):
     def create_model(self):
         store = gtk.ListStore(*([str] * len(self.__header)))
         for i in self.__data:
-            new=[]
-            for column in i:
-                new.append(column)
-            store.append(new)
+            store.append(i)
         return store
 
 
     def create_columns(self, treeView):
-        for i in range(0,len(self.__header)):
+        for i in range(0, len(self.__header)):
             rendererText = gtk.CellRendererText()
-            new=self.__header[i].replace('_','_ ')
+            new = self.__header[i].replace('_','_ ')
             column = gtk.TreeViewColumn(new, rendererText, text=i)
             column.set_sort_column_id(i)
             treeView.append_column(column)
