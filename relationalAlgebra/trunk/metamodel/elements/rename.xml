@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ElementType id="Rename" xmlns="http://umlfri.kst.fri.uniza.sk/xmlschema/metamodel.xsd">
     <Icon path="icons/rename.png" />
-    <Domain id="rename" identity="alias_name" />
+    <Domain id="rename" identity="name" />
     <Connections>
         <Item value="Relationship" allowrecursive="1"/>
     </Connections>
@@ -14,14 +14,14 @@
                             <TextBox text="ρ" font="Arial 20"></TextBox>
                             <Padding top="15">
                                 <VBox>									
-									<VBox>	
-										<Condition condition="#self.name">
+									<VBox>		
+										<TextBox text="#self.alias_name"></TextBox>	
+										<Condition condition="#self.attribute_name">
 											<VBox>	
-												<TextBox text="#self.name" />
 												<TextBox text=" / " />
+												<TextBox text="#self.attribute_name" />	
 											</VBox>
 										</Condition>
-										<TextBox text="#self.alias_name"></TextBox>	
 									</VBox>
                                 </VBox>
                             </Padding>

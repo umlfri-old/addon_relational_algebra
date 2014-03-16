@@ -1,13 +1,19 @@
 __author__ = 'Michal'
 
+from composite_operations import Selection
+
 
 class Join:
-    def __init__(self, left=False, right=False):
+    def __init__(self, condition=None, left=False, right=False):
         self.__ancestor_left = None
         self.__ancestor_right = None
         self.__right = right
         self.__left = left
-        self.__condition = None
+        if condition is not None:
+            self.__condition = []
+            for cond in condition:
+                self.__condition.append(Selection(cond['column1'], cond['condition'], cond['column2']))
+        self.__condition = condition
         self.__element = None
         if left and right:
             self.__name = "Full outter join"
