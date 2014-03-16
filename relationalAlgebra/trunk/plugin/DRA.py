@@ -1,13 +1,14 @@
 #!/usr/bin/python
+import math
+import threading
+
 from org.umlfri.api.mainLoops import GtkMainLoop
 from connect import *
 from composite_operations import *
 from list import *
 from attention import *
-import math
-from error import *
-import threading
 from sql_parser import Sql_parser
+
 
 class DRA:
     def __init__(self,interface):

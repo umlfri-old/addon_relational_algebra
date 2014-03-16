@@ -1,61 +1,68 @@
 import re
 import copy
-from relation import *
-from row import *
-from error import *
-from MySQLdb import ProgrammingError
-import psycopg2
 import datetime
 import time
 from datetime import timedelta
 import math
 
+from MySQLdb import ProgrammingError
+import psycopg2
+
+
+
+
 class Interval():
-    def __init__(self,years,months,precision):
-        self.__years=years
-        self.__months=months
-        self.__precision=precision
-        if str(self.__years)[0]=="-":
-            self.__sign="-"
+    def __init__(self, years, months, precision):
+        self.__years = years
+        self.__months = months
+        self.__precision = precision
+        if str(self.__years)[0] == "-":
+            self.__sign = "-"
         else:
-            self.__sign="+"
+            self.__sign = "+"
+
     def getSign(self):
         return self.__sign
 
     def getYears(self):
         return self.__years
+
     def getMonths(self):
         return self.__months
+
     def __str__(self):
-        spaceMonths=""
-        spaceYears=""
-        if self.__months<10:
+        spaceMonths = ""
+        spaceYears = ""
+        if self.__months < 10:
             spaceMonths += "0"
-        if len(str(self.__years))!=self.__precision:
-             for i in range(0,self.__precision-1):
-                 spaceYears +="0"
+        if len(str(self.__years)) != self.__precision:
+             for i in range(0, self.__precision-1):
+                 spaceYears += "0"
         return self.__sign+spaceYears+str(int(math.fabs(self.__years)))+"-"+spaceMonths+str(self.__months)
 
     def __cmp__(self, other):
-        months=int(math.fabs(self.getYears()))*12+self.getMonths()
-        monthsOther=int(math.fabs(other.getYears()))*12+other.getMonths()
-        if months == monthsOther and self.getSign()==other.getSign():
+        months = int(math.fabs(self.getYears()))*12+self.getMonths()
+        monthsOther = int(math.fabs(other.getYears()))*12+other.getMonths()
+        if months == monthsOther and self.getSign() == other.getSign():
             return 0
-        elif months<monthsOther and self.getSign()==other.getSign():
+        elif months < monthsOther and self.getSign() == other.getSign():
             return -1
-        elif months>monthsOther and self.getSign()==other.getSign():
+        elif months > monthsOther and self.getSign() == other.getSign():
             return 1
-        elif self.getSign()!=other.getSign():
-            if self.getSign()=="+":
+        elif self.getSign() != other.getSign():
+            if self.getSign() == "+":
                 return 1
             else:
                 return -1
+
+
 class Table:
-    def __init__(self,data,table):
-        self.__database=data
-        self.__table_name=table.lower()
-        if table=="":
-            raise CompileError("Table error. You must type name of table","Compile error")
+    def __init__(self, data, table):
+        self.__database = data
+        self.__table_name = table.lower()
+        if table == "":
+            raise CompileError("Table error. You must type name of table", "Compile error")
+
     def execute(self):
         #return name of columns and store into variable header
         try:
