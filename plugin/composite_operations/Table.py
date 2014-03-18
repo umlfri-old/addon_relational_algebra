@@ -31,23 +31,26 @@ class Table:
         except CompileError as e:
             raise CompileError(e.getValue(),e.getName())
         except ProgrammingError as e:
-            raise CompileError(e.__str__(),"Compile error")
+            raise CompileError(e.__str__(), "Compile error")
         except psycopg2.ProgrammingError as e:
-            raise CompileError(e.__str__(),"CompileError")
+            raise CompileError(e.__str__(), "CompileError")
 
         try:
             data = self.__connection.getData(self.__table)
         except CompileError as e:
-            raise CompileError(e.getValue(),e.getName())
+            raise CompileError(e.getValue(), e.getName())
         except ProgrammingError as e:
-            raise CompileError(e.__str__(),"Compile error")
+            raise CompileError(e.__str__(), "Compile error")
         except psycopg2.ProgrammingError as e:
-            raise CompileError(e.__str__(),"CompileError")
+            raise CompileError(e.__str__(), "CompileError")
 
         data = list(data)
-        for i in range(0,len(data)):
+        print data
+        for i in range(0, len(data)):
             new = []
             for y in range(0, len(data[i])):
                 new.append(data[i][y])
             relation.addRow(new)
-        return relation
+        unique_relation = Relation(relation.getHeader(), relation.getName())
+        [unique_relation.addRow(list(x)) for x in set(tuple(x) for x in relation)]
+        return unique_relation

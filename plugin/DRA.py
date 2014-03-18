@@ -152,17 +152,17 @@ class DRA:
 
     def check(self):
         if self.__check.get_active():
-            entry=self.__gtkBuilder.get_object("entry5")
+            entry = self.__gtkBuilder.get_object("entry5")
             entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#E6E6E6"))
             entry.set_editable(False)
-            entry=self.__gtkBuilder.get_object("entry6")
+            entry = self.__gtkBuilder.get_object("entry6")
             entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#E6E6E6"))
             entry.set_editable(False)
         else:
-            entry=self.__gtkBuilder.get_object("entry5")
+            entry = self.__gtkBuilder.get_object("entry5")
             entry.set_editable(True)
             entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#FFFFFF"))
-            entry=self.__gtkBuilder.get_object("entry6")
+            entry = self.__gtkBuilder.get_object("entry6")
             entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#FFFFFF"))
             entry.set_editable(True)
 
@@ -184,54 +184,54 @@ class DRA:
         self.__menuConnect.hide()
 
     def connect(self):
-        host=self.__gtkBuilder.get_object("entry1").get_text()
-        database=self.__gtkBuilder.get_object("entry2").get_text()
-        user=self.__gtkBuilder.get_object("entry3").get_text()
-        password=self.__gtkBuilder.get_object("entry4").get_text()
-        user1=self.__gtkBuilder.get_object("entry5").get_text()
-        password1=self.__gtkBuilder.get_object("entry6").get_text()
-        check=self.__check.get_active()
-        type=self.__combobox.get_active()
-        if type==-1:
+        host = self.__gtkBuilder.get_object("entry1").get_text()
+        database = self.__gtkBuilder.get_object("entry2").get_text()
+        user = self.__gtkBuilder.get_object("entry3").get_text()
+        password = self.__gtkBuilder.get_object("entry4").get_text()
+        user1 = self.__gtkBuilder.get_object("entry5").get_text()
+        password1 = self.__gtkBuilder.get_object("entry6").get_text()
+        check = self.__check.get_active()
+        type = self.__combobox.get_active()
+        if type == -1:
             self.__menuConnect.show()
-            attention=InfoBarDemo("Connect error","You must choose type of database","Warning")
+            attention = InfoBarDemo("Connect error", "You must choose type of database","Warning")
             self.__windows.append(attention)
             attention.show()
-        elif host=="":
+        elif host == "":
             self.__menuConnect.show()
-            attention=InfoBarDemo("Connect error","You must type host name","Warning")
+            attention = InfoBarDemo("Connect error", "You must type host name", "Warning")
             self.__windows.append(attention)
             attention.show()
-        elif database=="" and type!=1:
+        elif database == "" and type != 1:
             self.__menuConnect.show()
-            attention=InfoBarDemo("Connect error","You must type name of database","Warning")
+            attention = InfoBarDemo("Connect error","You must type name of database", "Warning")
             self.__windows.append(attention)
             attention.show()
         elif user=="":
             self.__menuConnect.show()
-            attention=InfoBarDemo("Connect error","You must type user name","Warning")
+            attention=InfoBarDemo("Connect error", "You must type user name", "Warning")
             self.__windows.append(attention)
             attention.show()
-        elif check == False and type==1 and user1=="":
+        elif not check and type == 1 and user1 == "":
             self.__menuConnect.show()
-            attention=InfoBarDemo("Connect error","You must type user name for server or use check button for using same login info","Warning")
+            attention = InfoBarDemo("Connect error", "You must type user name for server or use check button for using same login info", "Warning")
             self.__windows.append(attention)
             attention.show()
-        elif check == False and type==1 and password1=="":
+        elif not check and type == 1 and password1 == "":
             self.__menuConnect.show()
-            attention=InfoBarDemo("Connect error","You must type password for server or use check button for using same login info","Warning")
+            attention=InfoBarDemo("Connect error", "You must type password for server or use check button for using same login info", "Warning")
             self.__windows.append(attention)
             attention.show()
         else:
-            menu=self.__submenu.items
-            a=Connection()
-            if type==1 and check==False:
-                threading._start_new_thread(a.connect,(host,database,user,password,type,menu,self.__windows,user1,password1))
+            menu = self.__submenu.items
+            a = Connection()
+            if type == 1 and not check:
+                threading._start_new_thread(a.connect, (host, database, user, password, type,menu, self.__windows, user1, password1))
             else:
-                threading._start_new_thread(a.connect,(host,database,user,password,type,menu,self.__windows))
+                threading._start_new_thread(a.connect, (host, database, user, password, type,menu, self.__windows))
             self.__menuConnect.hide()
             for m in menu:
-                if m.gui_id=="connect":
+                if m.gui_id == "connect":
                     m.enabled=False
 
     def disconnect(self):

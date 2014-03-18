@@ -9,9 +9,9 @@ import paramiko
 import psycopg2
 import gobject
 
-from operations import *
+import cx_Oracle
 from composite_operations import *
-from operations import parse_time
+
 from attention import *
 from progress import WaitingBar
 
@@ -58,6 +58,7 @@ class Connection():
                     m.enabled = True
             gobject.idle_add(p.hide_all)
         elif type is 1:
+            '''
             #pripojenie na oracle
             self.__database = paramiko.SSHClient()
             self.__database.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -66,7 +67,6 @@ class Connection():
                     user = user1.rsplit("@")
                     self.__database.connect(host1, username=user[0], password=password1)
                 except paramiko.AuthenticationException as e:
-                    print "f"
                     a = InfoBarDemo("Connection error", e.__str__()+" Login or password to server is wrong", "Warning", menu)
                     windows.append(a)
                     gobject.idle_add(p.hide_all)
@@ -116,7 +116,7 @@ class Connection():
 
             command = 'bash -l -c "sqlplus '+user1+"\""
             self.__stdin,self.__stdout,self.__stderr=self.__database.exec_command(command)
-
+            print "command sqlplus poslany"
             if not self.__stdout.readline():
                 string=self.__stderr.readlines()
                 if "bash: sqlplus:" in string[0]:
@@ -133,13 +133,20 @@ class Connection():
                     if self.__typ is not None:
                         gobject.idle_add(a.show)
                     return
+            print "nastavovanie premennych oracle"
             self.__stdin.write(password1)
+            print "napisanie hesla"
             self.__stdin.write('col c new_value cnv;\n')
+            print "nastavenie col c"
             self.__stdin.write('select chr(10) c from dual;\n')
+            print "nastavenie chr(10)"
             self.__stdin.write('set sqlprompt "#~#~#~#~#~#~#~#~# cnv";\n')
+            print "nastavenie sqlprompt"
             line = self.__stdout.readline()
+            print line
             while line != "SQL> #~#~#~#~#~#~#~#~#\n":
                 if line == "ERROR:\n":
+                    print "error tu"
                     a = InfoBarDemo("Connection error", "Database authentication error. Login or password to database is wrong. Login must be in format for example login@orcl", "Warning", menu)
                     windows.append(a)
                     gobject.idle_add(p.hide_all)
@@ -147,6 +154,8 @@ class Connection():
                         gobject.idle_add(a.show)
                     return
                 line = self.__stdout.readline()
+                print line
+            print "nastavovanie dalsich premmenych oracle"
             self.write_command('set pages 0;\n')
             self.write_command('set recsep ea;\n')
             self.write_command('set space 10;\n')
@@ -155,6 +164,18 @@ class Connection():
             self.write_command('set linesize 32767 ||;\n')
             self.write_command('alter session set NLS_TIMESTAMP_FORMAT="YYYY-MM-DD HH24:MI:SS";\n')
             self.write_command('alter session set NLS_DATE_FORMAT="YYYY-MM-DD";\n')
+            self.__typ="oracle"
+            for m in menu:
+                if m.gui_id == "connect":
+                    m.visible = False
+                if m.gui_id == "disconnect":
+                    m.visible = True
+                if m.gui_id == "execute":
+                    m.enabled = True
+            gobject.idle_add(p.hide_all)
+            '''
+            con = 'belas/maxik8245@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=asterix.fri.uniza.sk)(PORT=1521)))(CONNECT_DATA=(SID=orcl)))'
+            self.__database = cx_Oracle.connect(con)
             self.__typ="oracle"
             for m in menu:
                 if m.gui_id == "connect":
@@ -200,8 +221,10 @@ class Connection():
 
     def getColumns(self,table):
         self.__type=[]
+        '''
         if self.__typ == "oracle":
             prikaz = "desc " + table+";\n"
+
             self.__stdin.write(prikaz)
             lines = []
             names = []
@@ -249,35 +272,41 @@ class Connection():
                 self.__type.append(type_column)
                 name_column = ' '.join(name_column.split())
                 header.append(name_column)
+
             return header
         else:
-            if self.__typ == "postgreSQL":
-                prikaz = "SELECT column_name FROM information_schema.columns WHERE table_name ="+"'"+table+"';"
-            else:
-                prikaz = "SHOW COLUMNS IN "+table+";"
-            cursor = self.__database.cursor()
-            cursor.execute(prikaz)
-            header = []
-            i = 0
-            cursor = list(cursor)
-            if self.__typ == "postgreSQL":
-                for y in range(len(cursor)-1, -1, -1):
-                    for column in cursor[y]:
-                        if i is 0:
-                            header.append(column.lower())
-                        i += 1
-                    i = 0
-            else:
-                for y in range(0, len(cursor)):
-                    for column in cursor[y]:
-                        if i is 0:
-                            header.append(column.lower())
-                        i += 1
-                    i = 0
-            return header
+        '''
+        if self.__typ == "oracle":
+            prikaz = "SELECT table_name FROM all_tables WHERE nvl(tablespace_name, 'no tablespace') NOT IN ('SYSTEM', 'SYSAUX') AND table_name = '" + table + "' AND OWNER = 'belas' AND IOT_NAME IS NULL"
+        elif self.__typ == "postgreSQL":
+            prikaz = "SELECT column_name FROM information_schema.columns WHERE table_name ="+"'"+table+"';"
+        else:
+            prikaz = "SHOW COLUMNS IN "+table+";"
+        cursor = self.__database.cursor()
+        cursor.execute(prikaz)
+        header = []
+        i = 0
+        cursor = list(cursor)
+        if self.__typ == "postgreSQL":
+            for y in range(len(cursor)-1, -1, -1):
+                for column in cursor[y]:
+                    if i is 0:
+                        header.append(column.lower())
+                    i += 1
+                i = 0
+        else:
+            for y in range(0, len(cursor)):
+                for column in cursor[y]:
+                    if i is 0:
+                        header.append(column.lower())
+                    i += 1
+                i = 0
+        return header
 
     def getData(self,table):
-        prikaz = "SELECT * FROM "+table+";\n"
+
+        prikaz = "SELECT * FROM "+table
+        '''
         if self.__typ == "oracle":
             self.__stdin.write(prikaz)
             line = self.__stdout.readline()
@@ -345,7 +374,8 @@ class Connection():
                 cursor.append(new)
             return cursor
         else:
-            cursor = self.__database.cursor()
-            cursor.execute(prikaz)
-            return cursor
+        '''
+        cursor = self.__database.cursor()
+        cursor.execute(prikaz)
+        return cursor
 

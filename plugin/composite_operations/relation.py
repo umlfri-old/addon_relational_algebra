@@ -39,11 +39,17 @@ class Relation:
         else:
             return self.__rows[i].getData(y)
 
-    def getColumn(self,i):
+    def getColumn(self, i):
         columns=[]
         for row in self.__rows:
             columns.append(row.getData(i))
         return columns
+
+    def removeColumn(self, column):
+        index = self.__header.index(column)
+        self.__header.pop(index)
+        for data in self.__rows:
+            data.pop(index)
 
 
 class Row:
