@@ -1,8 +1,6 @@
 __author__ = 'Michal'
 
 from error import CompileError
-from MySQLdb import ProgrammingError
-import psycopg2
 from relation import *
 
 class Table:
@@ -31,19 +29,13 @@ class Table:
             relation = Relation(header, self.__table)
         except CompileError as e:
             raise CompileError(e.getValue(),e.getName())
-        except ProgrammingError as e:
-            raise CompileError(e.__str__(), "Compile error")
-        except psycopg2.ProgrammingError as e:
-            raise CompileError(e.__str__(), "CompileError")
+
 
         try:
             data = self.__connection.getData(self.__table)
         except CompileError as e:
             raise CompileError(e.getValue(), e.getName())
-        except ProgrammingError as e:
-            raise CompileError(e.__str__(), "Compile error")
-        except psycopg2.ProgrammingError as e:
-            raise CompileError(e.__str__(), "CompileError")
+
 
 
         for i in range(0, len(data)):
