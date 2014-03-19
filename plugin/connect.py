@@ -16,6 +16,7 @@ try:
 except ImportError:
     psycopg2 = None
 
+import psycopg2
 try:
     import cx_Oracle
 except ImportError:
@@ -172,4 +173,3 @@ class Connection():
             raise CompileError(e.__str__(), "CompileError")
         data = list(cursor)
         return data
-
