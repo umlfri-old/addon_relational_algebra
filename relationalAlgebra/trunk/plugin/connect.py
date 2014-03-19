@@ -4,7 +4,7 @@ import sys
 import os
 
 if sys.platform == "win32":
-    sys.path.insert(0, os.getcwd() + "\\share\\addons\\DRA\\libs")
+    sys.path.append(os.getcwd() + "\\share\\addons\\DRA\\libs")
 
 try:
     import MySQLdb
@@ -58,15 +58,26 @@ class Connection():
 
         return databases
 
-    def connect(self, host1, database1, user1 ,password1, type, menu, windows, user2=None, password2=None):
+    def connect(self, host1, database1, user1 ,password1,sid, port, type, menu, windows):
         p = WaitingBar(self)
         windows.append(p)
         gobject.idle_add(p.show_all)
         if type is 0:
             try:
-                self.__database = MySQLdb.connect(host=host1, user=user1, passwd=password1, db=database1)
+                port = int(port)
+                self.__database = MySQLdb.connect(host=host1, user=user1, passwd=password1, db=database1, port=port)
+            except ValueError:
+                try:
+                    self.__database = MySQLdb.connect(host=host1, user=user1, passwd=password1, db=database1)
+                except MySQLdb.OperationalError as e:
+                    a = InfoBarDemo('Connection error',e.__str__(),"Warning", menu)
+                    windows.append(a)
+                    gobject.idle_add(p.hide_all)
+                    if self.__typ is not None:
+                        gobject.idle_add(a.show)
+                    return
             except MySQLdb.OperationalError as e:
-                a = InfoBarDemo('Connection error',e.__str__(),"Warning",menu)
+                a = InfoBarDemo('Connection error',e.__str__(),"Warning", menu)
                 windows.append(a)
                 gobject.idle_add(p.hide_all)
                 if self.__typ is not None:
@@ -79,11 +90,27 @@ class Connection():
                 if m.gui_id == "disconnect":
                     m.visible = True
                 if m.gui_id == "execute":
-                    m.enabled = True
+                     m.enabled = True
             gobject.idle_add(p.hide_all)
         elif type is 1:
-            con = 'belas/maxik8245@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=asterix.fri.uniza.sk)(PORT=1521)))(CONNECT_DATA=(SID=orcl)))'
-            self.__database = cx_Oracle.connect(con)
+            try:
+                con = '{0}/{1}@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST={2})(PORT={3})))(CONNECT_DATA=(SID={4})))'.format(user1,password1,host1,int(port),sid)
+            except ValueError:
+                a = InfoBarDemo("Connection error", "Please enter the port number", "Warning", menu)
+                windows.append(a)
+                gobject.idle_add(p.hide_all)
+                if self.__typ is not None:
+                    gobject.idle_add(a.show)
+                return
+            try:
+                self.__database = cx_Oracle.connect(con)
+            except cx_Oracle.DatabaseError as e:
+                a = InfoBarDemo("Connection error", e.__str__(), "Warning", menu)
+                windows.append(a)
+                gobject.idle_add(p.hide_all)
+                if self.__typ is not None:
+                    gobject.idle_add(a.show)
+                return
             self.__typ = "oracle"
             for m in menu:
                 if m.gui_id == "connect":
@@ -91,13 +118,23 @@ class Connection():
                 if m.gui_id == "disconnect":
                     m.visible = True
                 if m.gui_id == "execute":
-                    m.enabled = True
+                     m.enabled = True
             gobject.idle_add(p.hide_all)
         elif type is 2:
             #pripojenie na postreSQL
             try:
-                self.__database = psycopg2.connect(host=host1, dbname=database1, user=user1, password=password1)
-                self.__database.set_isolation_level(0)
+                port = int(port)
+                self.__database = psycopg2.connect(host=host1, dbname=database1, user=user1, password=password1, port=port)
+            except ValueError:
+                try:
+                    self.__database = psycopg2.connect(host=host1, dbname=database1, user=user1, password=password1)
+                except psycopg2.OperationalError as e:
+                    a = InfoBarDemo("Connection error", e.__str__(), "Warning", menu)
+                    windows.append(a)
+                    gobject.idle_add(p.hide_all)
+                    if self.__typ is not None:
+                        gobject.idle_add(a.show)
+                    return
             except psycopg2.OperationalError as e:
                 a = InfoBarDemo("Connection error", e.__str__(), "Warning", menu)
                 windows.append(a)
@@ -105,6 +142,7 @@ class Connection():
                 if self.__typ is not None:
                     gobject.idle_add(a.show)
                 return
+            self.__database.set_isolation_level(0)
             self.__typ="postgreSQL"
             for m in menu:
                 if m.gui_id == "connect":
@@ -112,11 +150,9 @@ class Connection():
                 if m.gui_id == "disconnect":
                     m.visible = True
                 if m.gui_id == "execute":
-                    m.enabled = True
+                     m.enabled = True
             gobject.idle_add(p.hide_all)
-        else:
-            gobject.idle_add(p.hide_all)
-            print "Nespravne pripojenie"
+
 
     def write_command(self, command):
         self.__stdin.write(command)

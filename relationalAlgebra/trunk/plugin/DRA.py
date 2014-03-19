@@ -100,86 +100,50 @@ class DRA:
 
     def menuConnect(self):
         if self.__menuConnect is None:
-            self.__gtkBuilder=gtk.Builder()
+            self.__gtkBuilder = gtk.Builder()
             self.__gtkBuilder.add_from_file("share\\addons\\DRA\\plugin\\menu.glade")
-            self.__menuConnect=self.__gtkBuilder.get_object("window1")
-            self.__password=self.__gtkBuilder.get_object("entry4")
-            self.__password2=self.__gtkBuilder.get_object("entry6")
-            self.__database=self.__gtkBuilder.get_object("entry2")
-            self.__check=self.__gtkBuilder.get_object("checkbutton1")
+            self.__menuConnect = self.__gtkBuilder.get_object("window1")
+            self.__password = self.__gtkBuilder.get_object("password")
+            self.__database = self.__gtkBuilder.get_object("database")
             store = gtk.ListStore(str)
             connection = Connection()
             databases = connection.getAvailableDatabases()
             for data in databases:
                 store.append([data])
-            #store.append (["MySQL"])
-            #store.append (["Oracle"])
-            #store.append (["PostgreSQL"])
-            self.__combobox=self.__gtkBuilder.get_object("combobox1")
+            self.__combobox = self.__gtkBuilder.get_object("type")
             self.__combobox.set_model(store)
-            self.__check.connect("toggled",lambda x:self.check())
-            self.__combobox.connect("changed",lambda x:self.oracle())
+            self.__combobox.connect("changed", lambda x: self.oracle())
             cell = gtk.CellRendererText()
             self.__combobox.pack_start(cell, True)
-            self.__combobox.add_attribute(cell, 'text',0)
-            connect_button=self.__gtkBuilder.get_object("button1")
-            cancel_button=self.__gtkBuilder.get_object("button2")
-            connect_button.connect("clicked",lambda x:self.connect())
-            cancel_button.connect("clicked",lambda x:self.cancel())
-            self.__objectes=[]
-            self.__objectes.append(self.__gtkBuilder.get_object("accellabel1"))
-            self.__objectes.append(self.__gtkBuilder.get_object("checkbutton1"))
-            self.__objectes.append(self.__gtkBuilder.get_object("accellabel2"))
-            self.__objectes.append(self.__gtkBuilder.get_object("accellabel3"))
-            self.__objectes.append(self.__gtkBuilder.get_object("entry5"))
-            self.__objectes.append(self.__gtkBuilder.get_object("entry6"))
-            entry=self.__gtkBuilder.get_object("entry5")
-            entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#E6E6E6"))
-            entry.set_editable(False)
-            entry=self.__gtkBuilder.get_object("entry6")
-            entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#E6E6E6"))
-            entry.set_editable(False)
+            self.__combobox.add_attribute(cell, 'text', 0)
+            connect_button = self.__gtkBuilder.get_object("button1")
+            cancel_button = self.__gtkBuilder.get_object("button2")
+            connect_button.connect("clicked", lambda x: self.connect())
+            cancel_button.connect("clicked", lambda x: self.cancel())
+            self.__sid = self.__gtkBuilder.get_object("sid")
+            self.__sid.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#E6E6E6"))
             self.__menuConnect.set_keep_above(True)
             self.__menuConnect.set_modal(True)
             self.__menuConnect.set_transient_for(None)
             self.__menuConnect.set_type_hint(gtk.gdk.WINDOW_TYPE_HINT_DIALOG)
-            self.__password.delete_text(0,len(self.__password.get_text())-1)
-            self.__password2.delete_text(0,len(self.__password2.get_text())-1)
-            self.__windows=[self.__menuConnect]
+            self.__password.delete_text(0, len(self.__password.get_text())-1)
+            self.__windows = [self.__menuConnect]
             self.__menuConnect.show_all()
-            for object in self.__objectes:
-                object.hide()
         else:
             self.__password.delete_text(0,len(self.__password.get_text()))
-            self.__password2.delete_text(0,len(self.__password2.get_text()))
             self.__menuConnect.show_all()
 
-    def check(self):
-        if self.__check.get_active():
-            entry = self.__gtkBuilder.get_object("entry5")
-            entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#E6E6E6"))
-            entry.set_editable(False)
-            entry = self.__gtkBuilder.get_object("entry6")
-            entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#E6E6E6"))
-            entry.set_editable(False)
-        else:
-            entry = self.__gtkBuilder.get_object("entry5")
-            entry.set_editable(True)
-            entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#FFFFFF"))
-            entry = self.__gtkBuilder.get_object("entry6")
-            entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#FFFFFF"))
-            entry.set_editable(True)
 
     def oracle(self):
-        type=self.__combobox.get_active()
+        type = self.__combobox.get_active()
         if type is 1:
-            for object in self.__objectes:
-                object.show()
+            self.__sid.set_editable(True)
+            self.__sid.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#FFFFFF"))
             self.__database.set_editable(False)
             self.__database.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#E6E6E6"))
         else:
-            for object in self.__objectes:
-                object.hide()
+            self.__sid.set_editable(False)
+            self.__sid.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#E6E6E6"))
             self.__database.set_editable(True)
             self.__database.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#FFFFFF"))
 
@@ -188,13 +152,12 @@ class DRA:
         self.__menuConnect.hide()
 
     def connect(self):
-        host = self.__gtkBuilder.get_object("entry1").get_text()
-        database = self.__gtkBuilder.get_object("entry2").get_text()
-        user = self.__gtkBuilder.get_object("entry3").get_text()
-        password = self.__gtkBuilder.get_object("entry4").get_text()
-        user1 = self.__gtkBuilder.get_object("entry5").get_text()
-        password1 = self.__gtkBuilder.get_object("entry6").get_text()
-        check = self.__check.get_active()
+        host = self.__gtkBuilder.get_object("host").get_text()
+        database = self.__gtkBuilder.get_object("database").get_text()
+        user = self.__gtkBuilder.get_object("login").get_text()
+        password = self.__gtkBuilder.get_object("password").get_text()
+        port = self.__gtkBuilder.get_object("port").get_text()
+        sid = self.__gtkBuilder.get_object("sid").get_text()
         type = self.__combobox.get_active()
         if type == -1:
             self.__menuConnect.show()
@@ -211,28 +174,20 @@ class DRA:
             attention = InfoBarDemo("Connect error","You must type name of database", "Warning")
             self.__windows.append(attention)
             attention.show()
-        elif user=="":
+        elif user == "":
             self.__menuConnect.show()
             attention=InfoBarDemo("Connect error", "You must type user name", "Warning")
             self.__windows.append(attention)
             attention.show()
-        elif not check and type == 1 and user1 == "":
+        elif type == "1" and sid == "":
             self.__menuConnect.show()
-            attention = InfoBarDemo("Connect error", "You must type user name for server or use check button for using same login info", "Warning")
-            self.__windows.append(attention)
-            attention.show()
-        elif not check and type == 1 and password1 == "":
-            self.__menuConnect.show()
-            attention=InfoBarDemo("Connect error", "You must type password for server or use check button for using same login info", "Warning")
+            attention=InfoBarDemo("Connect error", "You must specific SID", "Warning")
             self.__windows.append(attention)
             attention.show()
         else:
             menu = self.__submenu.items
             a = Connection()
-            if type == 1 and not check:
-                threading._start_new_thread(a.connect, (host, database, user, password, type,menu, self.__windows, user1, password1))
-            else:
-                threading._start_new_thread(a.connect, (host, database, user, password, type,menu, self.__windows))
+            threading._start_new_thread(a.connect, (host, database, user, password, sid, port,type,menu, self.__windows))
             self.__menuConnect.hide()
             for m in menu:
                 if m.gui_id == "connect":
