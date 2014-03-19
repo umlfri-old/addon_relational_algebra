@@ -1,15 +1,28 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+import sys
+import os
 
+if sys.platform == "win32":
+    sys.path.insert(0, os.getcwd() + "\\share\\addons\\DRA\\libs")
 
-import MySQLdb
+try:
+    import MySQLdb
+except ImportError:
+    MySQLdb = None
 
+try:
+    import psycopg2
+except ImportError:
+    psycopg2 = None
 
+try:
+    import cx_Oracle
+except ImportError:
+    cx_Oracle = None
 
-import psycopg2
 import gobject
-
-import cx_Oracle
+from composite_operations import CompileError
 
 
 from attention import *
@@ -32,6 +45,17 @@ class Connection():
     def disconnect(self):
         self.__typ = None
         self.__type = []
+
+    def getAvailableDatabases(self):
+        databases = []
+        if MySQLdb is not None:
+            databases.append("MySQL")
+        if cx_Oracle is not None:
+            databases.append("Oracle")
+        if psycopg2 is not None:
+            databases.append("PostgreSQL")
+
+        return databases
 
     def connect(self, host1, database1, user1 ,password1, type, menu, windows, user2=None, password2=None):
         p = WaitingBar(self)
@@ -111,7 +135,13 @@ class Connection():
         else:
             prikaz = "SHOW COLUMNS IN "+table+";"
         cursor = self.__database.cursor()
-        cursor.execute(prikaz)
+        try:
+            cursor.execute(prikaz)
+        except MySQLdb.ProgrammingError as e:
+            raise CompileError(e.__str__(), "Compile error")
+        except psycopg2.ProgrammingError as e:
+            raise CompileError(e.__str__(), "CompileError")
+
         header = []
         i = 0
         cursor = list(cursor)
@@ -134,7 +164,12 @@ class Connection():
     def getData(self,table):
         prikaz = "SELECT * FROM "+table
         cursor = self.__database.cursor()
-        cursor.execute(prikaz)
+        try:
+            cursor.execute(prikaz)
+        except MySQLdb.ProgrammingError as e:
+            raise CompileError(e.__str__(), "CompileError")
+        except psycopg2.ProgrammingError as e:
+            raise CompileError(e.__str__(), "CompileError")
         data = list(cursor)
         return data
 
