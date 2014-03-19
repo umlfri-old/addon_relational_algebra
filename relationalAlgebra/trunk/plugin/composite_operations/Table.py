@@ -37,7 +37,6 @@ class Table:
             raise CompileError(e.getValue(), e.getName())
 
 
-
         for i in range(0, len(data)):
             new = []
             for y in range(0, len(data[i])):
