@@ -1,5 +1,6 @@
 __author__ = 'Michal'
-from error import *
+
+from error import CompileError
 from MySQLdb import ProgrammingError
 import psycopg2
 from relation import *
@@ -44,8 +45,7 @@ class Table:
         except psycopg2.ProgrammingError as e:
             raise CompileError(e.__str__(), "CompileError")
 
-        data = list(data)
-        print data
+
         for i in range(0, len(data)):
             new = []
             for y in range(0, len(data[i])):
