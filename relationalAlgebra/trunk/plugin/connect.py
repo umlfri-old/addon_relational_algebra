@@ -16,11 +16,15 @@ try:
 except ImportError:
     psycopg2 = None
 
-import psycopg2
+
 try:
     import cx_Oracle
 except ImportError:
-    cx_Oracle = None
+    os.environ["Path"] += ";" +os.getcwd() + "\\share\\addons\\DRA\\libs\\dll"
+    try:
+        import cx_Oracle
+    except ImportError:
+        cx_Oracle = None
 
 import gobject
 from composite_operations import CompileError
