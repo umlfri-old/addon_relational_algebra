@@ -11,7 +11,7 @@ class PyApp(gtk.Window):
         self.set_resizable(True)
         self.set_position(gtk.WIN_POS_CENTER)
         self.connect("destroy", gtk.main_quit)
-        self.set_title("Result of "+self.__data.getName())
+        self.set_title("Result of query")
         vbox = gtk.VBox(False, 8)
         
         sw = gtk.ScrolledWindow()

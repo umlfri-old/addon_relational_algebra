@@ -1,10 +1,15 @@
 __author__ = 'Michal'
+
+from error import CompileError
+from relation import Relation
+
 class Product:
     def __init__(self):
         self.__ancestor_left = None
         self.__ancestor_right = None
         self.__name = "Product"
         self.__element = None
+        self.__data = None
 
     def set(self, ancestor):
         if self.__ancestor_left is None:
@@ -28,3 +33,22 @@ class Product:
             el = diagram.create_element(element)
             self.__element = el
         return self.__element
+
+    def execute(self):
+        if self.__data is None:
+            left_data = self.__ancestor_left.execute()
+            right_data = self.__ancestor_right.execute()
+            for header in left_data.getHeader():
+                try:
+                    right_data.getHeader().index(header)
+                    raise CompileError("column ambiguously defined for " + header,"Error")
+                except ValueError:
+                    pass
+            relation = Relation(left_data.getHeader() + right_data.getHeader(), None)
+            for i in left_data:
+                for y in right_data:
+                    relation.addRow(i + y)
+
+            return relation
+        else:
+            return self.__data

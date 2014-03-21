@@ -26,6 +26,7 @@ except ImportError:
     except ImportError:
         cx_Oracle = None
 
+
 import gobject
 from composite_operations import CompileError
 
@@ -45,6 +46,7 @@ def Singleton(cls):
 class Connection():
     def __init__(self):
         self.__typ = ""
+        self.__escape_char = None
         self.__type = []
 
     def disconnect(self):
@@ -88,6 +90,7 @@ class Connection():
                     gobject.idle_add(a.show)
                 return
             self.__typ = "mysql"
+            self.__escape_char = "`"
             for m in menu:
                 if m.gui_id == "connect":
                     m.visible = False
@@ -116,6 +119,7 @@ class Connection():
                     gobject.idle_add(a.show)
                 return
             self.__typ = "oracle"
+            self.__escape_char = "\""
             for m in menu:
                 if m.gui_id == "connect":
                     m.visible = False
@@ -147,7 +151,8 @@ class Connection():
                     gobject.idle_add(a.show)
                 return
             self.__database.set_isolation_level(0)
-            self.__typ="postgreSQL"
+            self.__typ = "postgreSQL"
+            self.__escape_char = "\""
             for m in menu:
                 if m.gui_id == "connect":
                     m.visible = False
@@ -170,17 +175,19 @@ class Connection():
     def getColumns(self,table):
         self.__type=[]
         if self.__typ == "oracle":
-            prikaz = "SELECT column_name FROM USER_TAB_COLUMNS WHERE table_name = '"+table.upper()+"'"
+            command = "SELECT column_name FROM USER_TAB_COLUMNS WHERE table_name = '"+table.upper()+"'"
         elif self.__typ == "postgreSQL":
-            prikaz = "SELECT column_name FROM information_schema.columns WHERE table_name ="+"'"+table+"';"
+            command = "SELECT column_name FROM information_schema.columns WHERE table_name ="+"'"+table+"';"
         else:
-            prikaz = "SHOW COLUMNS IN "+table+";"
+            command = "SHOW COLUMNS IN {0}".format(table)
         cursor = self.__database.cursor()
         try:
-            cursor.execute(prikaz)
+            cursor.execute(command)
         except MySQLdb.ProgrammingError as e:
             raise CompileError(e.__str__(), "Compile error")
         except psycopg2.ProgrammingError as e:
+            raise CompileError(e.__str__(), "CompileError")
+        except cx_Oracle.DatabaseError as e:
             raise CompileError(e.__str__(), "CompileError")
 
         header = []
@@ -203,13 +210,15 @@ class Connection():
         return header
 
     def getData(self,table):
-        prikaz = "SELECT * FROM "+table
+        command = "SELECT * FROM {0}{1}{0}".format(self.__escape_char, table.upper())
         cursor = self.__database.cursor()
         try:
-            cursor.execute(prikaz)
+            cursor.execute(command)
         except MySQLdb.ProgrammingError as e:
             raise CompileError(e.__str__(), "CompileError")
         except psycopg2.ProgrammingError as e:
+            raise CompileError(e.__str__(), "CompileError")
+        except cx_Oracle.DatabaseError as e:
             raise CompileError(e.__str__(), "CompileError")
         data = list(cursor)
         return data

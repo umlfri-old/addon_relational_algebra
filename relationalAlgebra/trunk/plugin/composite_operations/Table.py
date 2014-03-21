@@ -11,6 +11,7 @@ class Table:
         self.__name = "Table"
         self.__element = None
         self.__connection = connection
+        self.__data = None
 
     def paint(self, interface, diagram):
         return self.create_element(interface, diagram)
@@ -24,24 +25,24 @@ class Table:
         return self.__element
 
     def execute(self):
-        try:
-            header = self.__connection.getColumns(self.__table)
-            relation = Relation(header, self.__table)
-        except CompileError as e:
-            raise CompileError(e.getValue(),e.getName())
+        if self.__data is None:
+            try:
+                header = self.__connection.getColumns(self.__table)
+                relation = Relation(header, self.__table)
+            except CompileError as e:
+                raise CompileError(e.getValue(),e.getName())
+            try:
+                data = self.__connection.getData(self.__table)
+            except CompileError as e:
+                raise CompileError(e.getValue(), e.getName())
 
-
-        try:
-            data = self.__connection.getData(self.__table)
-        except CompileError as e:
-            raise CompileError(e.getValue(), e.getName())
-
-
-        for i in range(0, len(data)):
-            new = []
-            for y in range(0, len(data[i])):
-                new.append(data[i][y])
-            relation.addRow(new)
-        unique_relation = Relation(relation.getHeader(), relation.getName())
-        [unique_relation.addRow(list(x)) for x in set(tuple(x) for x in relation)]
-        return unique_relation
+            for i in range(0, len(data)):
+                new = []
+                for y in range(0, len(data[i])):
+                    new.append(data[i][y])
+                relation.addRow(new)
+            unique_relation = Relation(relation.getHeader(), relation.getName())
+            [unique_relation.addRow(list(x)) for x in set(tuple(x) for x in relation)]
+            return unique_relation
+        else:
+            return self.__data
