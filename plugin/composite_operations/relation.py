@@ -51,6 +51,11 @@ class Relation:
         for data in self.__rows:
             data.pop(index)
 
+    def setRows(self, rows):
+        self.__rows = rows
+
+    def getRows(self):
+        return self.__rows
 
 class Row:
     def __init__(self,data):
