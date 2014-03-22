@@ -419,22 +419,26 @@ class TokenList(Token):
             return alias
         return self.get_real_name()
 
-    def get_table_name(self):
+    def get_table_name(self, code=False):
         dot = self.token_next_match(0, T.Punctuation, '.')
         if dot is None:
             return None
         next_ = self.token_next_by_type(0,(T.Name, T.Wildcard, T.String.Symbol))
         if next_ is None:  # invalid identifier, e.g. "a."
             return None
+        if code:
+            return self._remove_quotes(next_.value)
         return next_.value
 
-    def get_real_name(self):
+    def get_real_name(self, code=False):
         """Returns the real name (object name) of this identifier."""
         # a.b
         dot = self.token_next_match(0, T.Punctuation, '.')
         if dot is None:
             next_ = self.token_next_by_type(0, (T.Name, T.Literal.String.Single,T.Literal.Number.Integer,T.Literal.Number.Float,T.Literal.String.Symbol))
             if next_ is not None:
+                if code:
+                    return self._remove_quotes(next_.value)
                 return next_.value
             return None
 
@@ -442,6 +446,8 @@ class TokenList(Token):
                                         (T.Name, T.Wildcard, T.String.Symbol))
         if next_ is None:  # invalid identifier, e.g. "a."
             return None
+        if code:
+            return self._remove_quotes(next_.value)
         return next_.value
 
 

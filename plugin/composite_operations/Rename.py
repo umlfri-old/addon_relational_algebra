@@ -2,7 +2,7 @@ __author__ = 'Michal'
 
 from relation import Relation
 from error import CompileError
-
+import sqlparse
 
 class Rename:
     def __init__(self, alias, column=None, ancestor=None):
@@ -11,7 +11,8 @@ class Rename:
         if column == "":
             self.__column = None
         else:
-            self.__column = column
+            column = sqlparse.parse(column)
+            self.__column = column[0].token_first()
         self.__name = "Rename"
         self.__element = None
         self.__data = None
@@ -43,9 +44,12 @@ class Rename:
                 relation.setName(self.__alias)
             else:
                 try:
-                    index = relation.getHeader().index(self.__column)
+                    index = relation.getHeader().index(self.__column.get_real_name(True))
+                    if self.__column.get_table_name() is not None:
+                        if relation.getName() != self.__column.get_table_name(True):
+                            raise CompileError("Relation don`t have attribute of name '" + self.__column.__str__() + "'", "Rename exception")
                 except ValueError:
-                    raise CompileError("Relation don`t have attribute of name '" + self.__column + "'", "Rename exception")
+                    raise CompileError("Relation don`t have attribute of name '" + self.__column.__str__() + "'", "Rename exception")
                 relation.getHeader()[index] = self.__alias
             unique_relation = Relation(relation.getHeader(), relation.getName())
             [unique_relation.addRow(list(x)) for x in set(tuple(x) for x in relation)]

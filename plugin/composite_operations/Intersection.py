@@ -47,7 +47,7 @@ class Intersection:
                         relation.addRow(row)
                     except ValueError:
                         pass
-                unique_relation = Relation(relation.getHeader(), relation.getName())
+                unique_relation = Relation(relation.getHeader(), None)
                 [unique_relation.addRow(list(x)) for x in set(tuple(x) for x in relation)]
                 self.__data = unique_relation
                 return unique_relation
