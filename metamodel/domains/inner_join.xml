@@ -1,5 +1,5 @@
 <Domain id="inner_join" xmlns="http://umlfri.kst.fri.uniza.sk/xmlschema/metamodel.xsd" >
-	<Attribute id="name" name="Name">
+	<Attribute id="name" name="Name" hidden="true">
 		<Str/>
 	</Attribute>
     <Attribute id="cond" name="Condition">
