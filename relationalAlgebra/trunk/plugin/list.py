@@ -40,7 +40,7 @@ class PyApp(gtk.Window):
     def create_columns(self, treeView):
         for i in range(0, len(self.__header)):
             rendererText = gtk.CellRendererText()
-            new = self.__header[i].replace('_','_ ')
+            new = self.__header[i].replace('_', '__')
             column = gtk.TreeViewColumn(new, rendererText, text=i)
             column.set_sort_column_id(i)
             treeView.append_column(column)

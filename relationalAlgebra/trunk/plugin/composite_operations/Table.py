@@ -3,6 +3,7 @@ __author__ = 'Michal'
 from error import CompileError
 from relation import *
 
+
 class Table:
     def __init__(self, connection, table):
         self.__table = table
@@ -43,6 +44,8 @@ class Table:
                 relation.addRow(new)
             unique_relation = Relation(relation.getHeader(), relation.getName())
             [unique_relation.addRow(list(x)) for x in set(tuple(x) for x in relation)]
+            self.__data = unique_relation
             return unique_relation
         else:
             return self.__data
+

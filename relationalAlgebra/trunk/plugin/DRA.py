@@ -245,8 +245,8 @@ class DRA:
         name = trunk.object.type.name
         reused = False
         elementName = trunk.object.values["name"]
-        if elementName in self.__elements:
-            object = self.__elements[name]
+        if self.__elements.has_key(elementName):
+            object = self.__elements[elementName]
             reused = True
         if not reused:
             connections = trunk.connections
@@ -323,6 +323,7 @@ class DRA:
                     object = Join(trunk.object.values["cond"], True, True)
             else:
                 raise CompileError("You cannot select connection", "Compile error")
+            self.__elements[elementName] = object
             if ob is not None:
                 ob.set(object)
             if len(list_destination) is not 0:
