@@ -1,13 +1,20 @@
 __author__ = 'Michal'
 
+from relation import Relation
+from error import CompileError
+
 
 class Rename:
     def __init__(self, alias, column=None, ancestor=None):
         self.__alias = alias
         self.__ancestor = ancestor
-        self.__column = column
+        if column == "":
+            self.__column = None
+        else:
+            self.__column = column
         self.__name = "Rename"
         self.__element = None
+        self.__data = None
 
     def set(self,ancestor):
         self.__ancestor = ancestor
@@ -28,3 +35,22 @@ class Rename:
                 el.object.values['attribute_name'] = self.__column.__str__()
             self.__element = el
         return self.__element
+
+    def execute(self):
+        if self.__data is None:
+            relation = self.__ancestor.execute()
+            if self.__column is None:
+                relation.setName(self.__alias)
+            else:
+                try:
+                    index = relation.getHeader().index(self.__column)
+                except ValueError:
+                    raise CompileError("Relation don`t have attribute of name '" + self.__column + "'", "Rename exception")
+                relation.getHeader()[index] = self.__alias
+            unique_relation = Relation(relation.getHeader(), relation.getName())
+            [unique_relation.addRow(list(x)) for x in set(tuple(x) for x in relation)]
+            self.__data = unique_relation
+            return unique_relation
+        else:
+            return self.__data
+

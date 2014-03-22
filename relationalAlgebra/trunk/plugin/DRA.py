@@ -266,6 +266,12 @@ class DRA:
                     raise CompileError("Table "+trunk.object.values["table_name"]+" have wrong number of connections", "Compile error")
                 else:
                     object = Table(a, trunk.object.values["table_name"])
+            elif name == "Rename":
+                a = Connection()
+                if len(list_destination) > 1:
+                    raise CompileError("Rename "+trunk.object.values["table_name"]+" have wrong number of connections", "Compile error")
+                else:
+                    object = Rename(trunk.object.values["alias_name"], trunk.object.values["attribute_name"])
             elif name == "Union":
                 if len(list_destination) != 2:
                     raise CompileError("Union "+trunk.object.values["name"]+" have wrong number of connections", "Compile error")

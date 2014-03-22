@@ -3,6 +3,7 @@ __author__ = 'Michal'
 from relation import Relation
 from error import CompileError
 
+
 class Difference:
     def __init__(self):
         self.__ancestor_left = None
