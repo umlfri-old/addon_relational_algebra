@@ -21,6 +21,9 @@ class Relation:
     def getName(self):
         return self.__name
 
+    def setName(self, name):
+        self.__name = name
+
     def addRow(self,row):
         self.__rows.append(row)
 

@@ -5,15 +5,19 @@ import copy
 
 
 class Projection:
-    def __init__(self, data):
-        self.__data = []
-        a = data.rsplit(":")
-        for i in range(1, len(a)):
-            b = a[i].rsplit("'")
-            self.__data.append(b[1].lower())
+    def __init__(self, data, i=False):
+        if not i:
+            self.__data = []
+            a = data.rsplit(":")
+            for i in range(1, len(a)):
+                b = a[i].rsplit("'")
+                self.__data.append(b[1].lower())
+        else:
+            self.__data = data
         self.__ancestor = None
         self.__name = "Projection"
         self.__element = None
+
 
     def set(self,ancestor):
         self.__ancestor = ancestor
