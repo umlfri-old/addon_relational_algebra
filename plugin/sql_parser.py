@@ -24,11 +24,11 @@ class Sql_parser:
 
         #get condition of select
         conditions, next_index = self.get_condition(object, next_index)
+        if len(conditions) != 0 and conditions is not None:
+            #group conditions into parenthesis
+            conditions = self.group_condition(conditions)
 
-        #group conditions into parenthesis
-        group_conditions = self.group_condition(conditions)
-
-        return Select(columns, tables, joins, group_conditions)
+        return Select(columns, tables, joins, conditions)
 
     def group_condition(self, conditions):
         old_conditions = copy.copy(conditions)
@@ -103,8 +103,6 @@ class Sql_parser:
                     type_join = object.token_next(object.token_index(table))
                     i = object.token_index(type_join)
                     condition = object.token_next(i)
-
-
             else:
                 if table.token_next_by_instance(0, Objects.Function) is None:
                     i = object.token_index(table)
@@ -136,6 +134,7 @@ class Sql_parser:
                     condition = join_condition.token_next(join_condition.token_index(type_join))
             if type_join.normalized in ("ON", "on"):
                 conditions = self.process_condition_join(condition)
+                actual_object = condition
             elif isinstance(type_join.ttype, type(Tokens.Keyword)) and type_join.normalized == "USING":
                 raise Exception("using is not supported")
 
@@ -371,8 +370,14 @@ class Sql_parser:
     def process_select(self, select):
         composite = None
         #process table
+        tables = []
         if select.get_tables() is not None:
             for table in select.get_tables():
+                if table.get_alias_name()is not None or table.get_alias_name() != "":
+                    tables.append(table.get_alias_name().__str__() + ".*")
+                else:
+                    tables.append(table.get_table_name().__str__() + ".*")
+
                 if table.get_table_type() == "FIRST":
                     composite = self.process_ancestor(table)
                 else:
@@ -383,6 +388,13 @@ class Sql_parser:
         #process joins
         if select.get_joins() is not None:
             for join in select.get_joins():
+                if isinstance(join.get_table_name(), Select):
+                    tables.append(join.get_alias_name().__str__() + ".*")
+                elif join.get_alias_name().__str__() != "" or join.get_alias_name().__str__() is not None:
+                    tables.append(join.get_alias_name().__str__() + ".*")
+                else:
+                    tables.append(join.get_table_name().__str__() + ".*")
+
                 if join.get_join_type() in ("LEFT OUTER JOIN", "LEFT JOIN"):
                     join_com = Join(True)
                 elif join.get_join_type() in ("RIGHT OUTER JOIN", "RIGHT JOIN"):
@@ -398,7 +410,7 @@ class Sql_parser:
                 composite = join_com
 
         #process conditions
-        composite = self.process_conditions(select.get_conditions(), composite, 0)
+        composite = self.process_conditions(select.get_conditions(), composite, tables)
 
         #process columns
         if select.get_columns() is not None and len(select.get_columns()) != 0:
@@ -414,18 +426,18 @@ class Sql_parser:
                 composite = rename
         return composite
 
-    def process_conditions(self, conditions, composite, level):
+    def process_conditions(self, conditions, composite, tables):
         left_operand = None
         if conditions is not None and len(conditions) != 0:
-            left_operand = self.process_operand(conditions[0], composite, level)
+            left_operand = self.process_operand(conditions[0], composite, tables)
             for i in range(1, len(conditions), 2):
                 #operation
                 operation = conditions[i]
                 if operation == "AND":
                     #right operand
-                    right_operand = self.process_operand(conditions[i+1], left_operand, level + 1)
+                    right_operand = self.process_operand(conditions[i+1], left_operand)
                 else:
-                    right_operand = self.process_operand(conditions[i+1], composite, level + 1)
+                    right_operand = self.process_operand(conditions[i+1], composite)
 
                 if operation == "AND":
                     #right_operand.set(left_operand)
@@ -439,9 +451,9 @@ class Sql_parser:
             return composite
         return left_operand
 
-    def process_operand(self, operand, composite, level):
+    def process_operand(self, operand, composite, tables):
         if isinstance(operand, list):
-            return self.process_conditions(operand, composite, level)
+            return self.process_conditions(operand, composite, tables)
 
         if isinstance(operand, Condition) and (operand.get_operator() in ("EXISTS", "NOT EXISTS", "IN", "NOT IN")
                                                and (isinstance(operand.get_right_operand(), Select) or isinstance(operand.get_left_operand(),Select))):
@@ -471,28 +483,32 @@ class Sql_parser:
                 product = Product()
                 product.set(composite)
                 product.set(self.process_select(operand.get_left_operand()))
+                if operand.get_right_operand() is not None or len(operand.get_right_operand()) != 0:
+                    selection = self.process_conditions(operand.get_right_operand(), product, tables)
+                    exists = selection
+                else:
+                    exists = product
+
+                projection = Projection(tables, True)
+                projection.set(exists)
+                return projection
+            elif operand.get_operator() == "NOT EXISTS":
+                product = Product()
+                product.set(composite)
+                product.set(self.process_select(operand.get_left_operand()))
 
                 if operand.get_right_operand() is not None or len(operand.get_right_operand()) != 0:
-                    selection = self.process_conditions(operand.get_right_operand(),product, level)
-                    return selection
+                    selection = self.process_conditions(operand.get_right_operand(), product, tables)
+                    projection = Projection(tables, True)
+                    projection.set(selection)
+                    difference = Difference()
+                    difference.set(composite)
+                    difference.set(projection)
                 else:
-                    return product
-            elif operand.get_operator() == "NOT EXISTS":
-                    product = Product()
-                    product.set(composite)
-                    product.set(self.process_select(operand.get_left_operand()))
-
-                    if operand.get_right_operand() is not None or len(operand.get_right_operand()) != 0:
-                        selection = self.process_conditions(operand.get_right_operand(), product, level)
-                        difference = Difference()
-                        difference.set(composite)
-                        difference.set(selection)
-                        return difference
-                    else:
-                        difference = Difference()
-                        difference.set(composite)
-                        difference.set(product)
-                        return difference
+                    difference = Difference()
+                    difference.set(composite)
+                    difference.set(product)
+                return difference
         elif isinstance(operand, Condition):
             selection = Selection(operand.get_left_operand(), operand.get_operator(), operand.get_right_operand())
             selection.set(composite)
