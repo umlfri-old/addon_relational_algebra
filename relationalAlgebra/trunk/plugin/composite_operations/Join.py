@@ -4,7 +4,7 @@ from composite_operations import Selection
 
 
 class Join:
-    def __init__(self, condition=None, left=False, right=False):
+    def __init__(self, left=False, right=False, condition=None):
         self.__ancestor_left = None
         self.__ancestor_right = None
         self.__right = right

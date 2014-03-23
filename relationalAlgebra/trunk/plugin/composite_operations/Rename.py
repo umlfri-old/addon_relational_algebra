@@ -8,7 +8,7 @@ class Rename:
     def __init__(self, alias, column=None, ancestor=None):
         self.__alias = alias
         self.__ancestor = ancestor
-        if column == "":
+        if column == "" or column is None:
             self.__column = None
         else:
             column = sqlparse.parse(column)

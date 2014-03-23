@@ -5,7 +5,7 @@ from relation import *
 
 
 class Table:
-    def __init__(self, connection, table):
+    def __init__(self, table, connection=None):
         self.__table = table
         if table == "":
             raise CompileError("Table error. You must type name of table", "Compile error")
