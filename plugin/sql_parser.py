@@ -23,9 +23,35 @@ class Sql_parser:
         joins, next_index = self.get_joins(object, next_index)
 
         #get condition of select
-        condition, next_index = self.get_condition(object, next_index)
+        conditions, next_index = self.get_condition(object, next_index)
 
-        return Select(columns, tables, joins, condition)
+        #group conditions into parenthesis
+        group_conditions = self.group_condition(conditions)
+
+        return Select(columns, tables, joins, group_conditions)
+
+    def group_condition(self, conditions):
+        old_conditions = copy.copy(conditions)
+        conditions = []
+        if isinstance(old_conditions[0], list):
+            group = [self.group_condition(old_conditions[0])]
+        else:
+            group = [old_conditions[0]]
+        for i in range(1, len(old_conditions), 2):
+            if old_conditions[i] == "AND":
+                group.append(old_conditions[i])
+                if isinstance(old_conditions[i + 1], list):
+                    group.append(self.group_condition(old_conditions[i + 1]))
+
+                else:
+                    group.append(old_conditions[i + 1])
+
+            else:
+                conditions.append(group)
+                conditions.append(old_conditions[i])
+                group = [old_conditions[i+1]]
+        conditions.append(group)
+        return conditions
 
     def check_select(self, object):
         actual_object = object.token_first()
@@ -108,7 +134,7 @@ class Sql_parser:
                     join_condition = table.token_next_by_instance(0, Objects.Function)
                     type_join = join_condition.token_first()
                     condition = join_condition.token_next(join_condition.token_index(type_join))
-            if isinstance(type_join.ttype, type(Tokens.Keyword)) and type_join.normalized == "ON":
+            if type_join.normalized in ("ON", "on"):
                 conditions = self.process_condition_join(condition)
             elif isinstance(type_join.ttype, type(Tokens.Keyword)) and type_join.normalized == "USING":
                 raise Exception("using is not supported")
@@ -372,7 +398,7 @@ class Sql_parser:
                 composite = join_com
 
         #process conditions
-        composite = self.process_conditions(select.get_conditions(), composite)
+        composite = self.process_conditions(select.get_conditions(), composite, 0)
 
         #process columns
         if select.get_columns() is not None and len(select.get_columns()) != 0:
@@ -388,18 +414,21 @@ class Sql_parser:
                 composite = rename
         return composite
 
-    def process_conditions(self, conditions, composite):
+    def process_conditions(self, conditions, composite, level):
         left_operand = None
         if conditions is not None and len(conditions) != 0:
-            left_operand = self.process_operand(conditions[0], composite)
-            for i in range(1,len(conditions), 2):
+            left_operand = self.process_operand(conditions[0], composite, level)
+            for i in range(1, len(conditions), 2):
                 #operation
                 operation = conditions[i]
-                #right operand
-                right_operand = self.process_operand(conditions[i+1], composite)
+                if operation == "AND":
+                    #right operand
+                    right_operand = self.process_operand(conditions[i+1], left_operand, level + 1)
+                else:
+                    right_operand = self.process_operand(conditions[i+1], composite, level + 1)
 
                 if operation == "AND":
-                    right_operand.set(left_operand)
+                    #right_operand.set(left_operand)
                     left_operand = right_operand
                 elif operation == "OR":
                     union = Union()
@@ -410,9 +439,9 @@ class Sql_parser:
             return composite
         return left_operand
 
-    def process_operand(self, operand, composite):
+    def process_operand(self, operand, composite, level):
         if isinstance(operand, list):
-            return self.process_conditions(operand, composite)
+            return self.process_conditions(operand, composite, level)
 
         if isinstance(operand, Condition) and (operand.get_operator() in ("EXISTS", "NOT EXISTS", "IN", "NOT IN")
                                                and (isinstance(operand.get_right_operand(), Select) or isinstance(operand.get_left_operand(),Select))):
@@ -434,7 +463,7 @@ class Sql_parser:
                 else:
                     operand.set_operator("NOT EXISTS")
 
-            elif operand.get_operator() in ("EXISTS","NOT EXISTS"):
+            elif operand.get_operator() in ("EXISTS", "NOT EXISTS"):
                 operand.set_right_operand(operand.get_left_operand().get_conditions())
                 operand.get_left_operand().set_conditions(None)
 
@@ -444,7 +473,7 @@ class Sql_parser:
                 product.set(self.process_select(operand.get_left_operand()))
 
                 if operand.get_right_operand() is not None or len(operand.get_right_operand()) != 0:
-                    selection = self.process_conditions(operand.get_right_operand(),product)
+                    selection = self.process_conditions(operand.get_right_operand(),product, level)
                     return selection
                 else:
                     return product
@@ -454,7 +483,7 @@ class Sql_parser:
                     product.set(self.process_select(operand.get_left_operand()))
 
                     if operand.get_right_operand() is not None or len(operand.get_right_operand()) != 0:
-                        selection = self.process_conditions(operand.get_right_operand(), product)
+                        selection = self.process_conditions(operand.get_right_operand(), product, level)
                         difference = Difference()
                         difference.set(composite)
                         difference.set(selection)
@@ -471,7 +500,7 @@ class Sql_parser:
 
     def process_ancestor(self, ancestor):
         if isinstance(ancestor, Table_object) or isinstance(ancestor, Join_object):
-            if isinstance(ancestor.get_table_name(),Select):
+            if isinstance(ancestor.get_table_name(), Select):
                 tab = self.process_select(ancestor.get_table_name())
             else:
                 tab = Table(ancestor.get_table_name())

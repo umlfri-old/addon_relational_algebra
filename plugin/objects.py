@@ -62,16 +62,9 @@ class Join_object:
 
 class Condition:
     def __init__(self,left_operand,operator,right_operand):
-        if isinstance(left_operand,Objects.Identifier):
-            self.__left_operand = Column(left_operand.get_table_name(),left_operand.get_real_name(),None)
-        else:
-            self.__left_operand = left_operand
-
+        self.__left_operand = left_operand
         self.__operator = operator
-        if isinstance(right_operand,Objects.Identifier):
-            self.__right_operand = Column(right_operand.get_table_name(),right_operand.get_real_name(),None)
-        else:
-            self.__right_operand = right_operand
+        self.__right_operand = right_operand
 #
     def get_left_operand(self):
         return self.__left_operand
