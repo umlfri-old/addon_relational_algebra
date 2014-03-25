@@ -38,22 +38,8 @@ class Product:
         if self.__data is None:
             left_data = self.__ancestor_left.execute()
             right_data = self.__ancestor_right.execute()
-            for i, header in enumerate(left_data.getHeader()):
-                try:
-                    index = right_data.getHeader().index(header)
-                    left_data.getHeader()[i] = left_data.getName() + "." + header
-                    right_data.getHeader()[index] = right_data.getName() + "." + header
-                    if left_data.getName() == right_data.getName():
-                        raise CompileError("column ambiguously defined for " + header, "Error")
-                except ValueError:
-                    pass
-            relation = Relation(left_data.getHeader() + right_data.getHeader(), None)
-            for i in left_data:
-                for y in right_data:
-                    relation.addRow(i + y)
-            unique_relation = Relation(relation.getHeader(), None)
-            [unique_relation.addRow(list(x)) for x in set(tuple(x) for x in relation)]
-            self.__data = unique_relation
-            return unique_relation
+            left_data.product(right_data)
+            self.__data = left_data
+            return self.__data
         else:
             return self.__data

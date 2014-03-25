@@ -2,7 +2,7 @@
 import gtk
 
 class PyApp(gtk.Window):
-    def __init__(self,data):
+    def __init__(self, data):
         super(PyApp, self).__init__()
         self.__data=data
         self.__header=self.__data.getHeader()
@@ -40,7 +40,7 @@ class PyApp(gtk.Window):
     def create_columns(self, treeView):
         for i in range(0, len(self.__header)):
             rendererText = gtk.CellRendererText()
-            new = self.__header[i].replace('_', '__')
+            new = self.__header[i].get_column_name().replace('_', '__')
             column = gtk.TreeViewColumn(new, rendererText, text=i)
             column.set_sort_column_id(i)
             treeView.append_column(column)
