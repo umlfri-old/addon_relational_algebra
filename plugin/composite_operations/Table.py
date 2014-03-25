@@ -29,7 +29,10 @@ class Table:
         if self.__data is None:
             try:
                 header = self.__connection.getColumns(self.__table)
-                relation = Relation(header, self.__table)
+                table_header = []
+                for h in header:
+                    table_header.append(Header(h, [self.__table]))
+                relation = Relation(table_header)
             except CompileError as e:
                 raise CompileError(e.getValue(),e.getName())
             try:
@@ -42,7 +45,7 @@ class Table:
                 for y in range(0, len(data[i])):
                     new.append(data[i][y])
                 relation.addRow(new)
-            unique_relation = Relation(relation.getHeader(), relation.getName())
+            unique_relation = Relation(relation.getHeader())
             [unique_relation.addRow(list(x)) for x in set(tuple(x) for x in relation)]
             self.__data = unique_relation
             return unique_relation

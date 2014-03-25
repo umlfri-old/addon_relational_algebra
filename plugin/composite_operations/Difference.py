@@ -39,18 +39,8 @@ class Difference:
         if self.__data is None:
             left_data = self.__ancestor_left.execute()
             right_data = self.__ancestor_right.execute()
-            if left_data.getHeader() == right_data.getHeader():
-                relation = Relation(left_data.getHeader(), None)
-                for row in left_data.getRows():
-                    try:
-                        right_data.getRows().index(row)
-                    except ValueError:
-                        relation.addRow(row)
-                unique_relation = Relation(relation.getHeader(), None)
-                [unique_relation.addRow(list(x)) for x in set(tuple(x) for x in relation)]
-                self.__data = unique_relation
-                return unique_relation
-            else:
-                raise CompileError("Columns`s names in tables are different", "Union error")
+            left_data.difference(right_data)
+            self.__data = left_data
+            return self.__data
         else:
             return self.__data
