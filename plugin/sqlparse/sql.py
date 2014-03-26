@@ -430,7 +430,7 @@ class TokenList(Token):
             return self._remove_quotes(next_.value)
         return next_.value
 
-    def get_real_name(self, code=False):
+    def get_real_name(self, code=False, value=True):
         """Returns the real name (object name) of this identifier."""
         # a.b
         dot = self.token_next_match(0, T.Punctuation, '.')
@@ -439,7 +439,9 @@ class TokenList(Token):
             if next_ is not None:
                 if code:
                     return self._remove_quotes(next_.value)
-                return next_.value
+                if value:
+                    return next_.value
+                return next_
             return None
 
         next_ = self.token_next_by_type(self.token_index(dot),
@@ -448,7 +450,9 @@ class TokenList(Token):
             return None
         if code:
             return self._remove_quotes(next_.value)
-        return next_.value
+        if value:
+            return next_.value
+        return next_
 
 
 class Statement(TokenList):

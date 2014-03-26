@@ -45,10 +45,8 @@ class Table:
                 for y in range(0, len(data[i])):
                     new.append(data[i][y])
                 relation.addRow(new)
-            unique_relation = Relation(relation.getHeader())
-            [unique_relation.addRow(list(x)) for x in set(tuple(x) for x in relation)]
-            self.__data = unique_relation
-            return unique_relation
+            relation.create_unique()
+            return relation
         else:
             return self.__data
 
