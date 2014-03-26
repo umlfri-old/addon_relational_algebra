@@ -39,69 +39,20 @@ class Division:
         return self.__element
 
     def execute(self):
-        ret=self.__ancestor_left.execute()
-        ret1=self.__ancestor_right.execute()
-        columns=ret.getHeader()
-        columns_help=copy.deepcopy(columns)
-        columns1=ret1.getHeader()
-        indexes=[]
-        indexes2=[]
-        match={}
-        #ulozi do premennej indexes cisla stlpcov, ktore treba delit
-        for i in range(0,len(columns1)):
+        if self.__data is None:
+            left_data = self.__ancestor_left.execute()
+            right_data = self.__ancestor_right.execute()
             try:
-                indexes.append(self.findElement(columns,columns1[i]))
-                del columns[indexes[-1]]
-            except ValueError:
-                raise CompileError("Columns`s names are not founded in table","Division error in "+self.__name)
-        relation=Relation(columns,self.__name)
-        #ulozi do premennej indexes2 cisla stlpcov, ktore ostanu vo vyslednej relacii
-        for i in range(0,len(columns)):
-            indexes2.append(self.findElement(columns_help,columns[i]))
-        #pre vsetky riadky v relacii zostavy string zo stlpcov, ktorymi delime, a ulozi do premennej match novy zaznam
-        #ak este zaznam neexistuje v premmenej matches alebo zvysi pocet najdenych zaznamov o jedna ak sa tam uz nachadza
-        for i in ret :
-            string1=""
-            for a in range(0,len(indexes)):
-                string1=string1+","+ i[indexes[a]]
-            for y in ret1:
-                string2=""
-                for b in range(0,len(indexes)):
-                    string2=string2+","+y[b]
-                if string1==string2:
-                    string3=""
-                    for c in range(0,len(indexes2)):
-                        string3=string3+","+i[(indexes2[c])].__str__()
-                    if match.get(string3) is None :
-                        new= [string3, 1]
-                        match[string3]=new
-                    else:
-                        new=match.get(string3)
-                        number=new[1]
-                        new[1]=number+1
-                        match[string3]=new
-        #vyberie vsetky hodnoty
-        values=match.values()
-        #pre vsetky hodnoty skontroluje, ktorej hodnoty sa pocet rovna poctu riadkov, ktorymi sme delili
-        #pre tu ktora vyhovuje rozdeli jej hodnotu podla ciarky na stlpce a vytvori novy Row s tymito hodnotami a nasledne
-        #prida do relacie
-        for i in range(0,len(values)):
-            new=values[i]
-            if new[1]== ret1.getLen():
-                row=new[0]
-                new1=row.rsplit(",")
-                row=[]
-                for y in range(0,len(new1)):
-                    if y is not 0:
-                        row.append(new1[y])
-                relation.addRow(row)
-        return relation
+                d_headers = left_data.difference_headers(right_data)
+                left_data_orig = copy.deepcopy(left_data)
+                t = left_data_orig.projection(d_headers).product(right_data)
+                a = t.difference(left_data).projection(d_headers)
+                left_data.projection(d_headers).difference(a)
+            except CompileError:
+                raise CompileError("Division error", "Division error")
+            self.__data = left_data
+            return self.__data
+        else:
+            return self.__data
 
-    def findElement(self, array,data):
-        for i in range(0,len(array)):
-            try:
-                index=array[i].index(data)
-                return i
-            except ValueError:
-                pass
-        raise ValueError
+
