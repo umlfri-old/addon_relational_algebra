@@ -2,7 +2,7 @@ from error import CompileError
 from sqlparse import tokens as Tokens
 import sqlparse
 import itertools
-
+from sqlparse import sql as Objects
 
 class Relation:
     def __init__(self, header=None):
@@ -165,6 +165,47 @@ class Relation:
                 else:
                     headers.append(sqlparse.parse(header.get_column_name())[0].token_first())
         return headers
+
+    def selection(self, left_operand, operation, right_operand):
+        rows = []
+        if isinstance(left_operand, Objects.Identifier):
+            try:
+                index, header = self.get_column_index(left_operand)
+            except ValueError:
+                raise CompileError("Ambiguously column name detected - '" + left_operand.__str__() + "'", "Projection error")
+            except IndexError:
+                raise CompileError("'" + left_operand.__str__() + "' not found in table", "Projection error")
+            index = index[0]
+            left_operand = {"type": "column", "value": index}
+        else:
+            if left_operand.ttype == Tokens.Literal.Number.Integer:
+                left_operand = {"value", int(left_operand.normalized)}
+            elif left_operand.ttype == Tokens.Literal.String.Single:
+                left_operand = {"value", left_operand.normalized}
+            elif left_operand.ttype == Tokens.Literal.Number.Float:
+                left_operand = {"value", float(left_operand.normalized)}
+
+        if isinstance(right_operand, Objects.Identifier):
+            try:
+                index, header = self.get_column_index(right_operand)
+            except ValueError:
+                raise CompileError("Ambiguously column name detected - '" + right_operand.__str__() + "'", "Projection error")
+            except IndexError:
+                raise CompileError("'" + right_operand.__str__() + "' not found in table", "Projection error")
+            index = index[0]
+            right_operand = {"type": "column", "value": index}
+        else:
+            if right_operand.ttype == Tokens.Literal.Number.Integer:
+                right_operand = {"value", int(right_operand.normalized)}
+            elif right_operand.ttype == Tokens.Literal.String.Single:
+                right_operand = {"value", right_operand.normalized}
+            elif right_operand.ttype == Tokens.Literal.Number.Float:
+                right_operand = {"value", float(right_operand.normalized)}
+        for row in self.__rows:
+            if left_operand["type"] == "column":
+                left = row[left_operand["value"]]
+            else:
+                left = left_operand["value"]
 
     def contains_column(self, column):
         for header in self.__header:

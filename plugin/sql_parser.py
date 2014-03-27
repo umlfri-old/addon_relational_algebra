@@ -93,7 +93,7 @@ class Sql_parser:
                 table_name.tokens.pop(0)
                 table_name.tokens.pop(len(table_name.tokens)-1)
                 table_name = self.parse_select(table_name)
-                alias_name = table.token_next_by_instance(0,Objects.Identifier)
+                alias_name = table.token_next_by_instance(0, Objects.Identifier)
                 join_condition = table.token_next_by_instance(0, Objects.Function)
                 if join_condition is not None:
                     type_join = join_condition.token_first()
