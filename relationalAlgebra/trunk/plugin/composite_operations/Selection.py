@@ -1,14 +1,18 @@
 __author__ = 'Michal'
 
 
+import sqlparse
+
+
 class Selection:
     def __init__(self, left_operand, operation, right_operand):
-        self.__left_operand = left_operand
-        self.__right_operand = right_operand
+        self.__left_operand = sqlparse.parse(left_operand)[0].token_first()
+        self.__right_operand = sqlparse.parse(right_operand)[0].token_first()
         self.__operation = operation
         self.__ancestor = None
         self.__name = "Selection"
         self.__element = None
+        self.__data = None
 
     def set(self, ancestor):
         self.__ancestor = ancestor
@@ -30,3 +34,11 @@ class Selection:
             self.__element = el
         return self.__element
 
+    def execute(self):
+        if self.__data is None:
+            left_data = self.__ancestor.execute()
+            left_data.selection(self.__left_operand, self.__operation, self.__right_operand)
+            self.__data = left_data
+            return self.__data
+        else:
+            return self.__data
