@@ -3,12 +3,31 @@ __author__ = 'Michal'
 
 import sqlparse
 
+from sqlparse import sql as Objects
+from error import CompileError
 
 class Selection:
-    def __init__(self, left_operand, operation, right_operand):
-        self.__left_operand = sqlparse.parse(left_operand)[0].token_first()
-        self.__right_operand = sqlparse.parse(right_operand)[0].token_first()
-        self.__operation = operation
+    def __init__(self, left_operand, operation, right_operand, diagram=True):
+        if not diagram:
+            self.__left_operand = sqlparse.parse(left_operand)[0].token_first()
+        else:
+            self.__left_operand = left_operand
+
+        if not diagram and not operation in("NOT IN", "IN"):
+            self.__right_operand = sqlparse.parse(right_operand)[0].token_first()
+        else:
+            if operation in ("NOT IN", "IN"):
+                self.__right_operand = right_operand.__str__()
+                if self.__right_operand[0] != "(" and self.__right_operand[-1] != ")":
+                    raise CompileError("Except list of values", "Selection error")
+            else:
+                self.__right_operand = right_operand
+
+        if operation.__str__() == "<>":
+            self.__operation = "!="
+        else:
+            self.__operation = operation
+
         self.__ancestor = None
         self.__name = "Selection"
         self.__element = None

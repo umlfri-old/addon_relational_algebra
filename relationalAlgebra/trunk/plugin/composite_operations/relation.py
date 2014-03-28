@@ -3,6 +3,12 @@ from sqlparse import tokens as Tokens
 import sqlparse
 import itertools
 from sqlparse import sql as Objects
+import datetime
+import time
+import re
+from cStringIO import StringIO
+from csv import reader
+
 
 class Relation:
     def __init__(self, header=None):
@@ -166,46 +172,134 @@ class Relation:
                     headers.append(sqlparse.parse(header.get_column_name())[0].token_first())
         return headers
 
+    def process_operand(self, operand):
+        op = None
+        if isinstance(operand, Objects.Identifier):
+            try:
+                index, header = self.get_column_index(operand)
+            except ValueError:
+                raise CompileError("Ambiguously column name detected - '" + operand.__str__() + "'", "Projection error")
+            except IndexError:
+                raise CompileError("'" + operand.__str__() + "' not found in table", "Projection error")
+            index = index[0]
+            op = {"type": "column", "value": index}
+        else:
+            if operand.ttype == Tokens.Literal.Number.Integer:
+                op = {"type": "integer", "value": int(operand.normalized)}
+            elif operand.ttype == Tokens.Literal.String.Single:
+                operand = operand.normalized
+                if operand[0] in ('"', '\'') and operand[-1] == operand[0]:
+                    operand = operand[1:-1]
+                op = {"type": "string", "value": operand}
+            elif operand.ttype == Tokens.Literal.Number.Float:
+                op = {"type": "float", "value": float(operand.normalized)}
+            elif operand.ttype == Tokens.Keyword:
+                op = {"type": "keyword", "value": operand.normalized}
+            else:
+                raise CompileError("Not supported column name", "Selection error")
+        return op
+
+    def get_columns_values(self, left_operand, right_operand, operation, row):
+        if operation in("IS", "IS NOT"):
+            if right_operand["type"] != "keyword":
+                raise CompileError("Excepted NULL keyword with IS or IS NOT comparison", "Selection error")
+
+        if left_operand["type"] == "column":
+            left_value = row[left_operand["value"]]
+        else:
+            left_value = left_operand["value"]
+
+        if right_operand["type"] == "column":
+            right_value = row[right_operand["value"]]
+        else:
+            right_value = right_operand["value"]
+
+
+        if type(right_value) != type(left_value):
+            if isinstance(right_value, type(datetime)) and not isinstance(left_value, type(datetime)):
+                left_value = self.parse_date(left_value)
+            if isinstance(left_value, type(datetime)) and not isinstance(right_value, type(datetime)):
+                right_value = self.parse_date(right_value)
+
+        if operation in("LIKE", "NOT LIKE"):
+            left_value = left_value.__str__()
+            right_value = right_value.__str__()
+            right_value = right_value.replace(".", "\\.\\")
+            right_value = right_value.replace("*", "\\*\\")
+            right_value = right_value.replace("_", ".")
+            right_value = right_value.replace("%", ".*")
+
+
+        if operation in("IN", "NOT IN"):
+            del right_value[0]
+            del right_value[-1]
+            object_string = StringIO(right_value)
+            right_value = reader(object_string, quotechar="'")
+        return left_value, right_value
+
+    def parse_date(self, left_value):
+        try:
+            time_format = "%Y-%m-%d %H:%M:%S"
+            value = datetime.datetime.fromtimestamp(time.mktime(time.strptime(left_value, time_format)))
+        except ValueError:
+            try:
+                time_format = "%Y-%m-%d"
+                value = datetime.date.fromtimestamp(time.mktime(time.strptime(left_value, time_format)))
+            except ValueError:
+                raise CompileError("Value must be in format '%Y-%m-%d %H:%M:%S' or '%Y-%m-%d'", "Selection error")
+        return value
+
     def selection(self, left_operand, operation, right_operand):
         rows = []
-        if isinstance(left_operand, Objects.Identifier):
-            try:
-                index, header = self.get_column_index(left_operand)
-            except ValueError:
-                raise CompileError("Ambiguously column name detected - '" + left_operand.__str__() + "'", "Projection error")
-            except IndexError:
-                raise CompileError("'" + left_operand.__str__() + "' not found in table", "Projection error")
-            index = index[0]
-            left_operand = {"type": "column", "value": index}
-        else:
-            if left_operand.ttype == Tokens.Literal.Number.Integer:
-                left_operand = {"value", int(left_operand.normalized)}
-            elif left_operand.ttype == Tokens.Literal.String.Single:
-                left_operand = {"value", left_operand.normalized}
-            elif left_operand.ttype == Tokens.Literal.Number.Float:
-                left_operand = {"value", float(left_operand.normalized)}
-
-        if isinstance(right_operand, Objects.Identifier):
-            try:
-                index, header = self.get_column_index(right_operand)
-            except ValueError:
-                raise CompileError("Ambiguously column name detected - '" + right_operand.__str__() + "'", "Projection error")
-            except IndexError:
-                raise CompileError("'" + right_operand.__str__() + "' not found in table", "Projection error")
-            index = index[0]
-            right_operand = {"type": "column", "value": index}
-        else:
-            if right_operand.ttype == Tokens.Literal.Number.Integer:
-                right_operand = {"value", int(right_operand.normalized)}
-            elif right_operand.ttype == Tokens.Literal.String.Single:
-                right_operand = {"value", right_operand.normalized}
-            elif right_operand.ttype == Tokens.Literal.Number.Float:
-                right_operand = {"value", float(right_operand.normalized)}
+        left_operand = self.process_operand(left_operand)
+        right_operand = self.process_operand(right_operand)
         for row in self.__rows:
-            if left_operand["type"] == "column":
-                left = row[left_operand["value"]]
-            else:
-                left = left_operand["value"]
+            left_value, right_value = self.get_columns_values(left_operand, right_operand, operation, row)
+            if (self.compare(left_value, right_value, operation)):
+                rows.append(row)
+        self.__rows = rows
+        return self
+
+    def compare(self, left, right, operation):
+        if operation == "=":
+            if left == right:
+                return True
+        elif operation == "<":
+            if left < right:
+                return True
+        elif operation == "<=":
+            if left <= right:
+                return True
+        elif operation == ">":
+            if left > right:
+                return True
+        elif operation == ">=":
+            if left >= right:
+                return True
+        elif operation == "!=":
+            if left != right:
+                return True
+        elif operation == "IS":
+            if left is None:
+                return True
+        elif operation == "IS NOT":
+            if left is not None:
+                return True
+        elif operation == "LIKE":
+            a = re.match(right, left)
+            if a is not None:
+                return True
+        elif operation == "NOT LIKE":
+            a = re.match(right, left)
+            if a is None:
+                return True
+        elif operation == "IN":
+            if left in right:
+                return True
+        elif operation == "NOT IN":
+            if left not in right:
+                return True
+        return False
 
     def contains_column(self, column):
         for header in self.__header:
