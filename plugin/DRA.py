@@ -301,7 +301,7 @@ class DRA:
                 if len(list_destination) != 1:
                     raise CompileError("Selection "+trunk.object.values["name"]+" have wrong number of connections", "Compile error")
                 else:
-                    object = Selection(trunk.object.values["column1"], trunk.object.values["condition"], trunk.object.values["column2"])
+                    object = Selection(trunk.object.values["column1"], trunk.object.values["condition"], trunk.object.values["column2"], False)
             elif name == "Projection":
                 if len(list_destination) != 1:
                     raise CompileError("Projection "+trunk.object.values["name"]+" have wrong number of connections", "Compile error")
