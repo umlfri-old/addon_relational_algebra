@@ -17,6 +17,8 @@ class Relation:
         else:
             self.__header = header
         self.__rows = []
+        self.__right_value = {}
+        self.__left_value = {}
 
     def __iter__(self):
         for i in self.__rows:
@@ -184,12 +186,13 @@ class Relation:
             index = index[0]
             op = {"type": "column", "value": index}
         else:
-            if operand.ttype == Tokens.Literal.Number.Integer:
+            if isinstance(operand, str):
+                op = {"type": "string", "value": operand}
+            elif operand.ttype == Tokens.Literal.Number.Integer:
                 op = {"type": "integer", "value": int(operand.normalized)}
             elif operand.ttype == Tokens.Literal.String.Single:
                 operand = operand.normalized
-                if operand[0] in ('"', '\'') and operand[-1] == operand[0]:
-                    operand = operand[1:-1]
+                operand = self.remove_quotes(operand)
                 op = {"type": "string", "value": operand}
             elif operand.ttype == Tokens.Literal.Number.Float:
                 op = {"type": "float", "value": float(operand.normalized)}
@@ -199,43 +202,80 @@ class Relation:
                 raise CompileError("Not supported column name", "Selection error")
         return op
 
+    def remove_quotes(self, value):
+        if value[0] in '\'' and value[-1] == value[0]:
+            operand = value[1:-1]
+            return operand
+        raise ValueError
+
     def get_columns_values(self, left_operand, right_operand, operation, row):
         if operation in("IS", "IS NOT"):
             if right_operand["type"] != "keyword":
                 raise CompileError("Excepted NULL keyword with IS or IS NOT comparison", "Selection error")
-
+            else:
+                self.__right_value["type"] = "others"
         if left_operand["type"] == "column":
+            self.__left_value["type"] = "column"
             left_value = row[left_operand["value"]]
-        else:
+        elif not "value" in self.__left_value:
+            self.__left_value["type"] = "others"
             left_value = left_operand["value"]
 
         if right_operand["type"] == "column":
+            self.__right_value["type"] = "column"
             right_value = row[right_operand["value"]]
-        else:
+        elif not "value" in self.__right_value:
+            self.__right_value["type"] = "others"
             right_value = right_operand["value"]
 
+        if not "value" in self.__right_value or not "value" in self.__left_value:
+            if type(right_value) != type(left_value):
+                if isinstance(right_value, datetime.datetime) and not isinstance(left_value, datetime.datetime):
+                    left_value = self.parse_date(left_value)
+                if isinstance(left_value, datetime.datetime) and not isinstance(right_value, datetime.datetime):
+                    right_value = self.parse_date(right_value)
 
-        if type(right_value) != type(left_value):
-            if isinstance(right_value, type(datetime)) and not isinstance(left_value, type(datetime)):
-                left_value = self.parse_date(left_value)
-            if isinstance(left_value, type(datetime)) and not isinstance(right_value, type(datetime)):
-                right_value = self.parse_date(right_value)
+            if operation in("LIKE", "NOT LIKE"):
+                left_value = left_value.__str__()
+                right_value = right_value.__str__()
+                right_value = right_value.replace(".", "\\.\\")
+                right_value = right_value.replace("*", "\\*\\")
+                right_value = right_value.replace("_", ".")
+                right_value = right_value.replace("%", ".*")
 
-        if operation in("LIKE", "NOT LIKE"):
-            left_value = left_value.__str__()
-            right_value = right_value.__str__()
-            right_value = right_value.replace(".", "\\.\\")
-            right_value = right_value.replace("*", "\\*\\")
-            right_value = right_value.replace("_", ".")
-            right_value = right_value.replace("%", ".*")
-
-
-        if operation in("IN", "NOT IN"):
-            del right_value[0]
-            del right_value[-1]
-            object_string = StringIO(right_value)
-            right_value = reader(object_string, quotechar="'")
-        return left_value, right_value
+            if operation in("IN", "NOT IN"):
+                if right_value[0] != "(" and right_value[-1] != ")":
+                    raise CompileError("Wrong list format in condition. List of values must be in parentheses", "Selection error")
+                right_value = right_value[1:-1]
+                right_value = right_value.split(",")
+                values = []
+                for value in right_value:
+                    if isinstance(left_value, str):
+                        try:
+                            values.append(self.remove_quotes(value))
+                        except ValueError:
+                            raise CompileError("Wrong string format, must be in quotations ''", "Selection error")
+                    elif isinstance(left_value, float):
+                        try:
+                            values.append(float(value))
+                        except ValueError:
+                            raise CompileError("Wrong float number", "Selection error")
+                    elif isinstance(left_value, int):
+                        try:
+                            values.append(int(value))
+                        except ValueError:
+                            raise CompileError("Wrong int number", "Selection error")
+                    elif isinstance(left_value, datetime):
+                        values.append(self.parse_date(value))
+                right_value = values
+            self.__right_value["value"] = right_value
+            self.__left_value["value"] = left_value
+        else:
+            if self.__left_value["type"] == "column":
+                self.__left_value["value"] = left_value
+            if self.__right_value["type"] == "column":
+                self.__right_value["value"] = right_value
+        return self.__left_value["value"], self.__right_value["value"]
 
     def parse_date(self, left_value):
         try:
@@ -243,8 +283,9 @@ class Relation:
             value = datetime.datetime.fromtimestamp(time.mktime(time.strptime(left_value, time_format)))
         except ValueError:
             try:
-                time_format = "%Y-%m-%d"
-                value = datetime.date.fromtimestamp(time.mktime(time.strptime(left_value, time_format)))
+                time_format = "%Y-%m-%d %H:%M:%S"
+                left_value = left_value + " 00:00:00"
+                value = datetime.datetime.fromtimestamp(time.mktime(time.strptime(left_value, time_format)))
             except ValueError:
                 raise CompileError("Value must be in format '%Y-%m-%d %H:%M:%S' or '%Y-%m-%d'", "Selection error")
         return value
@@ -255,28 +296,52 @@ class Relation:
         right_operand = self.process_operand(right_operand)
         for row in self.__rows:
             left_value, right_value = self.get_columns_values(left_operand, right_operand, operation, row)
-            if (self.compare(left_value, right_value, operation)):
-                rows.append(row)
+            try:
+                if self.compare(left_value, right_value, operation):
+                    rows.append(row)
+            except ValueError:
+                raise CompileError("Types of columns not equal", "Selection error")
         self.__rows = rows
         return self
 
+    def check_type(self, left, right):
+        if left is None and right is not None:
+            return False
+        if left is not None and right is None:
+            return False
+        if type(left) != type(right):
+            raise ValueError
+        return True
+
     def compare(self, left, right, operation):
         if operation == "=":
+            if not self.check_type(left, right):
+                return False
             if left == right:
                 return True
         elif operation == "<":
+            if not self.check_type(left, right):
+                return False
             if left < right:
                 return True
         elif operation == "<=":
+            if not self.check_type(left, right):
+                return False
             if left <= right:
                 return True
         elif operation == ">":
+            if not self.check_type(left, right):
+                return False
             if left > right:
                 return True
         elif operation == ">=":
+            if not self.check_type(left, right):
+                return False
             if left >= right:
                 return True
         elif operation == "!=":
+            if not self.check_type(left, right):
+                return False
             if left != right:
                 return True
         elif operation == "IS":
@@ -286,11 +351,11 @@ class Relation:
             if left is not None:
                 return True
         elif operation == "LIKE":
-            a = re.match(right, left)
+            a = re.match(right, left.__str__())
             if a is not None:
                 return True
         elif operation == "NOT LIKE":
-            a = re.match(right, left)
+            a = re.match(right, left.__str__())
             if a is None:
                 return True
         elif operation == "IN":
