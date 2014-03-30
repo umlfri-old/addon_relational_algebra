@@ -6,8 +6,7 @@ from sqlparse import sql as Objects
 import datetime
 import time
 import re
-from cStringIO import StringIO
-from csv import reader
+from objects import Condition
 
 
 class Relation:
@@ -71,11 +70,11 @@ class Relation:
         self.create_unique()
         return self
 
-    def get_column_index(self, column):
+    def get_column_index(self, column, only_column_name=False):
         index = []
         header_name = []
         for i, header in enumerate(self.__header):
-            if header.is_equal(column):
+            if header.is_equal(column, only_column_name):
                 if len(header_name) == 0 and len(index) == 0:
                     index.append(i)
                     header_name.append(header)
@@ -421,6 +420,20 @@ class Relation:
     def join(self, other, conditions, left, right):
         rows = []
         used = []
+        if conditions is None or len(conditions) == 0:
+            common = False
+            for header in self.__header:
+                try:
+                    index, header_name = other.get_column_index(header.get_column_name(), True)
+                    conditions.append(Condition(sqlparse.parse(header.__str__())[0].token_first(),
+                                                "=", sqlparse.parse(header_name[0].__str__())[0].token_first()))
+                    common = True
+                except ValueError:
+                    pass
+                except IndexError:
+                    pass
+            if not common:
+                raise CompileError("Table don`t have common columns", "Natural join error")
         for condition in conditions:
             try:
                 left_operand = self.process_operand(condition.get_left_operand())
@@ -515,17 +528,21 @@ class Header:
     def get_column_name(self):
         return self.__column_name
 
-    def is_equal(self, column):
-        if column.get_real_name(False, False).ttype is not None \
-                and isinstance(column.get_real_name(False, False).ttype, type(Tokens.Wildcard)) \
-                and column.get_real_name(False, True) == "*" \
-                and column.get_table_name() in self.__tables_name:
-            return True
-        if column.get_real_name(True) == self.__column_name and column.get_table_name() is None:
-            return True
-        if column.get_table_name() is not None and column.get_table_name() in self.__tables_name \
-                and column.get_real_name(True) == self.__column_name:
-            return True
+    def is_equal(self, column, only_column_name=False):
+        if only_column_name:
+            if self.__column_name == column:
+                return True
+        else:
+            if column.get_real_name(False, False).ttype is not None \
+                    and isinstance(column.get_real_name(False, False).ttype, type(Tokens.Wildcard)) \
+                    and column.get_real_name(False, True) == "*" \
+                    and column.get_table_name() in self.__tables_name:
+                return True
+            if column.get_real_name(True) == self.__column_name and column.get_table_name() is None:
+                return True
+            if column.get_table_name() is not None and column.get_table_name() in self.__tables_name \
+                    and column.get_real_name(True) == self.__column_name:
+                return True
         return False
 
     def add_table_name(self, table_name):
@@ -536,7 +553,12 @@ class Header:
     def get_table_name(self):
         return self.__tables_name
 
-
+    def __str__(self):
+        column = ""
+        if self.__tables_name is not None and len(self.__tables_name) != 0:
+            column = self.__tables_name[0] + "."
+        column = column + self.__column_name
+        return column
 
 
 
