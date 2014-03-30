@@ -37,7 +37,7 @@ class Relation:
     def add_header(self, header):
         self.__header.append(header)
 
-    def addRow(self,row):
+    def addRow(self, row):
         self.__rows.append(row)
 
     def getHeader(self):
@@ -56,7 +56,7 @@ class Relation:
             return self.__rows[i].getData(y)
 
     def getColumn(self, i):
-        columns=[]
+        columns = []
         for row in self.__rows:
             columns.append(row.getData(i))
         return columns
@@ -79,7 +79,8 @@ class Relation:
                 if len(header_name) == 0 and len(index) == 0:
                     index.append(i)
                     header_name.append(header)
-                elif isinstance(column.get_real_name(False, False).ttype, type(Tokens.Wildcard)) and column.get_real_name(False, True) == "*":
+                elif isinstance(column.get_real_name(False, False).ttype,
+                                type(Tokens.Wildcard)) and column.get_real_name(False, True) == "*":
                     index.append(i)
                     header_name.append(header)
                 else:
@@ -149,7 +150,7 @@ class Relation:
         return self
 
     def create_unique(self):
-        self.__rows = [k for k,v in itertools.groupby(sorted(self.__rows))]
+        self.__rows = [k for k, v in itertools.groupby(sorted(self.__rows))]
 
     def is_equal_header(self, other):
         header = [o.get_column_name() for o in self.__header]
@@ -169,7 +170,8 @@ class Relation:
                 other.contains_column(header.get_column_name())
             except IndexError:
                 if header.get_table_name() is not None or len(header.get_table_name()) != 0:
-                    headers.append(sqlparse.parse(header.get_table_name()[0] + "." + header.get_column_name())[0].token_first())
+                    headers.append(
+                        sqlparse.parse(header.get_table_name()[0] + "." + header.get_column_name())[0].token_first())
                 else:
                     headers.append(sqlparse.parse(header.get_column_name())[0].token_first())
         return headers
@@ -177,12 +179,7 @@ class Relation:
     def process_operand(self, operand):
         op = None
         if isinstance(operand, Objects.Identifier):
-            try:
-                index, header = self.get_column_index(operand)
-            except ValueError:
-                raise CompileError("Ambiguously column name detected - '" + operand.__str__() + "'", "Projection error")
-            except IndexError:
-                raise CompileError("'" + operand.__str__() + "' not found in table", "Projection error")
+            index, header = self.get_column_index(operand)
             index = index[0]
             op = {"type": "column", "value": index}
         else:
@@ -208,25 +205,48 @@ class Relation:
             return operand
         raise ValueError
 
-    def get_columns_values(self, left_operand, right_operand, operation, row):
-        if operation in("IS", "IS NOT"):
+    def get_columns_values(self, left_operand, right_operand, operation, row, other_row=None):
+        if operation in ("IS", "IS NOT"):
             if right_operand["type"] != "keyword":
                 raise CompileError("Excepted NULL keyword with IS or IS NOT comparison", "Selection error")
             else:
                 self.__right_value["type"] = "others"
-        if left_operand["type"] == "column":
-            self.__left_value["type"] = "column"
-            left_value = row[left_operand["value"]]
-        elif not "value" in self.__left_value:
-            self.__left_value["type"] = "others"
-            left_value = left_operand["value"]
+        if other_row is None:
+            if left_operand["type"] == "column":
+                self.__left_value["type"] = "column"
+                left_value = row[left_operand["value"]]
+            elif not "value" in self.__left_value:
+                self.__left_value["type"] = "others"
+                left_value = left_operand["value"]
 
-        if right_operand["type"] == "column":
-            self.__right_value["type"] = "column"
-            right_value = row[right_operand["value"]]
-        elif not "value" in self.__right_value:
-            self.__right_value["type"] = "others"
-            right_value = right_operand["value"]
+            if right_operand["type"] == "column":
+                self.__right_value["type"] = "column"
+                right_value = row[right_operand["value"]]
+            elif not "value" in self.__right_value:
+                self.__right_value["type"] = "others"
+                right_value = right_operand["value"]
+        else:
+            if left_operand["type"] == "column":
+                if left_operand["relation"] == "first":
+                    self.__left_value["type"] = "column"
+                    left_value = row[left_operand["value"]]
+                elif left_operand["relation"] == "second":
+                    self.__left_value["type"] = "column"
+                    left_value = other_row[left_operand["value"]]
+            elif not "value" in self.__left_value:
+                self.__left_value["type"] = "others"
+                left_value = left_operand["value"]
+
+            if right_operand["type"] == "column":
+                if right_operand["relation"] == "first":
+                    self.__right_value["type"] = "column"
+                    right_value = row[right_operand["value"]]
+                elif right_operand["relation"] == "second":
+                    self.__right_value["type"] = "column"
+                    right_value = other_row[right_operand["value"]]
+            elif not "value" in self.__right_value:
+                self.__right_value["type"] = "others"
+                right_value = right_operand["value"]
 
         if not "value" in self.__right_value or not "value" in self.__left_value:
             if type(right_value) != type(left_value):
@@ -235,7 +255,7 @@ class Relation:
                 if isinstance(left_value, datetime.datetime) and not isinstance(right_value, datetime.datetime):
                     right_value = self.parse_date(right_value)
 
-            if operation in("LIKE", "NOT LIKE"):
+            if operation in ("LIKE", "NOT LIKE"):
                 left_value = left_value.__str__()
                 right_value = right_value.__str__()
                 right_value = right_value.replace(".", "\\.\\")
@@ -243,9 +263,10 @@ class Relation:
                 right_value = right_value.replace("_", ".")
                 right_value = right_value.replace("%", ".*")
 
-            if operation in("IN", "NOT IN"):
+            if operation in ("IN", "NOT IN"):
                 if right_value[0] != "(" and right_value[-1] != ")":
-                    raise CompileError("Wrong list format in condition. List of values must be in parentheses", "Selection error")
+                    raise CompileError("Wrong list format in condition. List of values must be in parentheses",
+                                       "Selection error")
                 right_value = right_value[1:-1]
                 right_value = right_value.split(",")
                 values = []
@@ -292,8 +313,22 @@ class Relation:
 
     def selection(self, left_operand, operation, right_operand):
         rows = []
-        left_operand = self.process_operand(left_operand)
-        right_operand = self.process_operand(right_operand)
+        try:
+            left_operand = self.process_operand(left_operand)
+        except ValueError:
+            raise CompileError("Ambiguously column name detected - '" + left_operand.__str__() + "'",
+                               "Projection error")
+        except IndexError:
+            raise CompileError("'" + left_operand.__str__() + "' not found in table", "Projection error")
+
+        try:
+            right_operand = self.process_operand(right_operand)
+        except ValueError:
+            raise CompileError("Ambiguously column name detected - '" + right_operand.__str__() + "'",
+                               "Projection error")
+        except IndexError:
+            raise CompileError("'" + right_operand.__str__() + "' not found in table", "Projection error")
+
         for row in self.__rows:
             left_value, right_value = self.get_columns_values(left_operand, right_operand, operation, row)
             try:
@@ -383,6 +418,94 @@ class Relation:
     def getRows(self):
         return self.__rows
 
+    def join(self, other, conditions, left, right):
+        rows = []
+        used = []
+        for condition in conditions:
+            try:
+                left_operand = self.process_operand(condition.get_left_operand())
+                left_operand["relation"] = "first"
+            except ValueError:
+                raise CompileError(
+                    "Ambiguously column name detected - '" + condition.get_left_operand().__str__() + "'",
+                    "Projection error")
+            except IndexError:
+                try:
+                    left_operand = other.process_operand(condition.get_left_operand())
+                except ValueError:
+                    raise CompileError(
+                        "Ambiguously column name detected - '" + condition.get_left_operand().__str__() + "'",
+                        "Projection error")
+                except IndexError:
+                    raise CompileError("'" + condition.get_left_operand().__str__() + "' not found in table",
+                                       "Projection error")
+                left_operand["relation"] = "second"
+
+            try:
+                right_operand = self.process_operand(condition.get_right_operand())
+                right_operand["relation"] = "first"
+            except ValueError:
+                raise CompileError(
+                    "Ambiguously column name detected - '" + condition.get_right_operand().__str__() + "'",
+                    "Projection error")
+            except IndexError:
+                try:
+                    right_operand = other.process_operand(condition.get_right_operand())
+                except ValueError:
+                    raise CompileError(
+                        "Ambiguously column name detected - '" + condition.get_right_operand().__str__() + "'",
+                        "Projection error")
+                except IndexError:
+                    raise CompileError("'" + condition.get_right_operand().__str__() + "' not found in table",
+                                       "Projection error")
+                right_operand["relation"] = "second"
+            for row in self.__rows:
+                number = 0
+                for r in other.getRows():
+                    left_value, right_value = self.get_columns_values(left_operand, right_operand,
+                                                                      condition.get_operator(), row, r)
+                    try:
+                        if self.compare(left_value, right_value, condition.get_operator()):
+                            number += 1
+                            used.append(r)
+                            try:
+                                rows.index(row + r)
+                            except ValueError:
+                                rows.append(row + r)
+                        else:
+                            try:
+                                rows.remove(row + r)
+                            except ValueError:
+                                pass
+                    except ValueError:
+                        raise CompileError("Types of columns not equal", "Selection error")
+                if number == 0 and left:
+                    none = []
+                    for i in range(0, len(other.getHeader())):
+                        none.append(None)
+                    rows.append(row + none)
+            if right:
+                for r in other.getRows():
+                    none = []
+                    if r not in used:
+                        for i in range(0, len(self.__header)):
+                            none.append(None)
+                        rows.append(none + r)
+        self.__rows = rows
+        self.create_unique()
+        self.__header = self.__header + other.getHeader()
+        for condition in conditions:
+            if isinstance(condition.get_left_operand(), Objects.Identifier) \
+                    and isinstance(condition.get_right_operand(), Objects.Identifier):
+                if condition.get_left_operand().get_real_name(False, True) == condition.get_right_operand().get_real_name(False, True):
+                    column = condition.get_left_operand().get_real_name(False, True)
+                    indexes = [i for i, x in enumerate(self.__header) if x.get_column_name() == column]
+                    self.__header[indexes[0]].add_table_name(self.__header[indexes[1]].get_table_name())
+                    del self.__header[indexes[1]]
+                    for rows in self.__rows:
+                        del rows[indexes[1]]
+        return self
+
 
 class Header:
     def __init__(self, column, tables_name):
@@ -393,7 +516,7 @@ class Header:
         return self.__column_name
 
     def is_equal(self, column):
-        if column.get_real_name(False, False).ttype is not None\
+        if column.get_real_name(False, False).ttype is not None \
                 and isinstance(column.get_real_name(False, False).ttype, type(Tokens.Wildcard)) \
                 and column.get_real_name(False, True) == "*" \
                 and column.get_table_name() in self.__tables_name:
@@ -412,6 +535,8 @@ class Header:
 
     def get_table_name(self):
         return self.__tables_name
+
+
 
 
 

@@ -11,3 +11,4 @@ from Intersection import Intersection
 from Difference import Difference
 from Division import Division
 from error import *
+from objects import *

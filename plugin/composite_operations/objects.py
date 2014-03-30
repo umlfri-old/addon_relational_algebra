@@ -60,8 +60,9 @@ class Join_object:
     def get_conditions(self):
         return self.__conditions
 
+
 class Condition:
-    def __init__(self,left_operand,operator,right_operand):
+    def __init__(self, left_operand, operator, right_operand):
         self.__left_operand = left_operand
         self.__operator = operator
         self.__right_operand = right_operand

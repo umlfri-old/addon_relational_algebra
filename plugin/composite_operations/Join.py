@@ -1,7 +1,8 @@
 __author__ = 'Michal'
 
-from composite_operations import Selection
-
+from objects import Condition
+import ast
+import sqlparse
 
 class Join:
     def __init__(self, left=False, right=False, condition=None):
@@ -9,11 +10,14 @@ class Join:
         self.__ancestor_right = None
         self.__right = right
         self.__left = left
+        self.__condition = []
         if condition is not None:
-            self.__condition = []
-            for cond in condition:
-                self.__condition.append(Selection(cond['column1'], cond['condition'], cond['column2']))
-        self.__condition = condition
+            if not isinstance(condition, list):
+                condition = ast.literal_eval(condition)
+            for c in condition:
+                self.__condition.append(Condition(sqlparse.parse(c['column1'])[0].token_first(), c['condition'],
+                                                  sqlparse.parse(c['column2'])[0].token_first()))
+
         self.__element = None
         if left and right:
             self.__name = "Full outter join"
@@ -23,6 +27,7 @@ class Join:
             self.__name = "Right outter join"
         elif not left and not right:
             self.__name = "Inner join"
+        self.__data = None
 
     def set(self, ancestor):
         if self.__ancestor_left is None:
@@ -57,3 +62,13 @@ class Join:
             el.object.values['cond'] = conditions
             self.__element = el
         return self.__element
+
+    def execute(self):
+        if self.__data is None:
+            left_data = self.__ancestor_left.execute()
+            right_data = self.__ancestor_right.execute()
+            left_data.join(right_data, self.__condition, self.__left, self.__right)
+            self.__data = left_data
+            return self.__data
+        else:
+            return self.__data
