@@ -3,16 +3,16 @@ __author__ = 'Michal'
 from error import CompileError
 import copy
 import sqlparse
+import ast
+
 
 class Projection:
     def __init__(self, columns, i=False):
         if not i:
             self.__columns = []
-            a = columns.rsplit(":")
-            for i in range(1, len(a)):
-                b = a[i].rsplit("'")
-                column = sqlparse.parse((b[1].lower()))
-                self.__columns.append(column[0].token_first())
+            columns = ast.literal_eval(columns)
+            for column in columns:
+                self.__columns.append(sqlparse.parse(column["meno"])[0].token_first())
         else:
             self.__columns = columns
         self.__ancestor = None

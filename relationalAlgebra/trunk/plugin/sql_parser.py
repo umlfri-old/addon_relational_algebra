@@ -1,8 +1,8 @@
 __author__ = 'Michal'
-import sqlparse
-from objects import *
-from composite_operations import *
 import copy
+
+import sqlparse
+from composite_operations import *
 
 
 class Sql_parser:

@@ -6,6 +6,7 @@ import sqlparse
 from sqlparse import sql as Objects
 from error import CompileError
 
+
 class Selection:
     def __init__(self, left_operand, operation, right_operand, diagram=True):
         if not diagram:

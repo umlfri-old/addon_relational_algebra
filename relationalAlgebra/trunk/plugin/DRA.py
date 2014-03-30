@@ -311,22 +311,22 @@ class DRA:
                 if len(list_destination) != 2:
                     raise CompileError("Inner join "+trunk.object.values["name"]+" have wrong number of connections", "Compile error")
                 else:
-                    object = Join(trunk.object.values["cond"])
+                    object = Join(left=False, right=False, condition=trunk.object.values["cond"])
             elif name == "Left outter join":
                 if len(list_destination) != 2:
                     raise CompileError("Left outter join "+trunk.object.values["name"]+" have wrong number of connections", "Compile error")
                 else:
-                    object = Join(trunk.object.values["cond"], True)
+                    object = Join(left=True, right=False, condition=trunk.object.values["cond"])
             elif name == "Right outter join":
                 if len(list_destination) != 2:
                     raise CompileError("Right outter join "+trunk.object.values["name"]+" have wrong number of connections", "Compile error")
                 else:
-                    object = Join(trunk.object.values["cond"], right=True)
+                    object = Join(left=False, right=True, condition=trunk.object.values["cond"])
             elif name == "Full outter join":
                 if len(list_destination) != 2:
                     raise CompileError("Full outter join "+trunk.object.values["name"]+" have wrong number of connections", "Compile error")
                 else:
-                    object = Join(trunk.object.values["cond"], True, True)
+                    object = Join(left=True, right=True, condition=trunk.object.values["cond"])
             else:
                 raise CompileError("You cannot select connection", "Compile error")
             self.__elements[elementName] = object
