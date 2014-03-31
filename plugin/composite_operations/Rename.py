@@ -40,21 +40,8 @@ class Rename:
     def execute(self):
         if self.__data is None:
             relation = self.__ancestor.execute()
-            if self.__column is None:
-                relation.setName(self.__alias)
-            else:
-                try:
-                    index = relation.getHeader().index(self.__column.get_real_name(True))
-                    if self.__column.get_table_name() is not None:
-                        if relation.getName() != self.__column.get_table_name(True):
-                            raise CompileError("Relation don`t have attribute of name '" + self.__column.__str__() + "'", "Rename exception")
-                except ValueError:
-                    raise CompileError("Relation don`t have attribute of name '" + self.__column.__str__() + "'", "Rename exception")
-                relation.getHeader()[index] = self.__alias
-            unique_relation = Relation(relation.getHeader(), relation.getName())
-            [unique_relation.addRow(list(x)) for x in set(tuple(x) for x in relation)]
-            self.__data = unique_relation
-            return unique_relation
+            relation.rename(self.__column, self.__alias)
+            self.__data = relation
         else:
             return self.__data
 

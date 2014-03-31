@@ -189,7 +189,7 @@ class Relation:
             elif operand.ttype == Tokens.Literal.String.Single:
                 operand = operand.normalized
                 operand = self.remove_quotes(operand)
-                op = {"type": "string", "value": operand}
+                op = {"type": "string", "value": operand.encode("utf-8")}
             elif operand.ttype == Tokens.Literal.Number.Float:
                 op = {"type": "float", "value": float(operand.normalized)}
             elif operand.ttype == Tokens.Keyword:
@@ -336,6 +336,8 @@ class Relation:
             except ValueError:
                 raise CompileError("Types of columns not equal", "Selection error")
         self.__rows = rows
+        self.__right_value = {}
+        self.__left_value = {}
         return self
 
     def check_type(self, left, right):
@@ -519,6 +521,21 @@ class Relation:
                         del rows[indexes[1]]
         return self
 
+    def rename(self, column, alias):
+        if column is None:
+            for header in self.__header:
+                header.rename(alias)
+        else:
+            try:
+                index, header_name = self.get_column_index(column)
+            except IndexError:
+                raise CompileError("Relation don`t have attribute of name '" + column.__str__() + "'", "Rename exception")
+            except ValueError:
+                 raise CompileError("Ambiguously column name detected - '" + column.__str__() + "'", "Rename error")
+            if len(index) > 1:
+                raise CompileError("Ambigously column name detected - '" + column.__str__() + "'", "Rename error")
+            self.__header[index[0]].rename_column(alias)
+        return self
 
 class Header:
     def __init__(self, column, tables_name):
@@ -528,6 +545,11 @@ class Header:
     def get_column_name(self):
         return self.__column_name
 
+    def rename_table(self, table):
+        self.__tables_name = [table]
+
+    def rename_column(self, column):
+        self.__column_name = column
     def is_equal(self, column, only_column_name=False):
         if only_column_name:
             if self.__column_name == column:

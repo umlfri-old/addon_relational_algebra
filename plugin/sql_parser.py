@@ -435,9 +435,9 @@ class Sql_parser:
                 operation = conditions[i]
                 if operation == "AND":
                     #right operand
-                    right_operand = self.process_operand(conditions[i+1], left_operand)
+                    right_operand = self.process_operand(conditions[i+1], left_operand, tables)
                 else:
-                    right_operand = self.process_operand(conditions[i+1], composite)
+                    right_operand = self.process_operand(conditions[i+1], composite, tables)
 
                 if operation == "AND":
                     #right_operand.set(left_operand)
