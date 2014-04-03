@@ -21,6 +21,7 @@ class Table:
         if self.__element is None:
             element = interface.project.metamodel.elements[self.__name]
             el = diagram.create_element(element)
+            el.move((10, 10))
             el.object.values['table_name'] = self.__table
             self.__element = el
         return self.__element

@@ -335,10 +335,12 @@ class Sql_parser:
 
 
     def process_column(self, column):
-        if isinstance(column.ttype, type(Tokens.Punctuation)):
+        if column.ttype in (Tokens.Literal.String.Single, Tokens.Literal.Number.Integer, Tokens.Literal.Number.Float):
+            return Column(None, column.normalized, None, True)
+        elif isinstance(column.ttype, type(Tokens.Punctuation)):
             return
         #subselect in select part
-        if isinstance(column.token_first(), Objects.Parenthesis):
+        if isinstance(column, Objects.Parenthesis):
             raise Exception("subselect in select part is not supported")
         else:
             return Column(column.get_table_name(), column.get_real_name(), column.get_alias())
@@ -373,7 +375,7 @@ class Sql_parser:
         tables = []
         if select.get_tables() is not None:
             for table in select.get_tables():
-                if table.get_alias_name()is not None or table.get_alias_name() != "":
+                if table.get_alias_name() is not None and table.get_alias_name() != "":
                     tables.append(table.get_alias_name().__str__() + ".*")
                 else:
                     tables.append(table.get_table_name().__str__() + ".*")
@@ -412,14 +414,15 @@ class Sql_parser:
         #process conditions
         composite = self.process_conditions(select.get_conditions(), composite, tables)
 
+        columns = [item for item in select.get_columns() if not item.is_constant()]
         #process columns
-        if select.get_columns() is not None and len(select.get_columns()) != 0:
-            projection = Projection(select.get_columns())
+        if columns is not None and len(columns) != 0:
+            projection = Projection(columns, True)
             projection.set(composite)
             composite = projection
 
         #process rename
-        for column in select.get_columns():
+        for column in columns:
             alias = column.get_alias_name()
             if alias is not None and alias != "":
                 rename = Rename(alias, column.__str__(), composite)
@@ -528,6 +531,6 @@ class Sql_parser:
                 return tab
 
     def parse(self, command):
-        parsed = sqlparse.parse(sqlparse.format(command, reindent=True,keyword_case="upper"))
+        parsed = sqlparse.parse(sqlparse.format(command, reindent=True, keyword_case="upper"))
         select = self.parse_select(parsed[0])
         return self.process_select(select)

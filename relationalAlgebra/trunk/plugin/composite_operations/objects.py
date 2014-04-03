@@ -4,13 +4,17 @@ from sqlparse import tokens as Tokens
 from sqlparse import sql as Objects
 
 class Column:
-    def __init__(self,table_name,column_name,alias_name):
+    def __init__(self,table_name,column_name,alias_name,is_constant=False):
         self.__table_name = table_name
         self.__column_name = column_name
         self.__alias_name = alias_name
+        self.__is_constant = is_constant
 
     def get_table_name(self):
         return self.__table_name
+
+    def is_constant(self):
+        return self.__is_constant
 
     def get_column_name(self):
         return self.__column_name

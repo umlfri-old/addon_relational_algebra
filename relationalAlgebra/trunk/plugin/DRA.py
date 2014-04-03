@@ -54,14 +54,20 @@ class DRA:
         self.__diagram = list(self.__interface.project.root.diagrams)[0]
         self.__editorWindow.hide()
         buffer = self.__sqlCommand.get_buffer()
-        command = buffer.get_text(buffer.get_start_iter(),buffer.get_end_iter())
-        composite = self.__parser.parse(command)
-        composite.paint(self.__interface, self.__diagram)
+        command = buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())
+        try:
+            composite = self.__parser.parse(command)
+            with self.__interface.transaction:
+                composite.paint(self.__interface, self.__diagram)
+        except Exception as e:
+            attention = InfoBarDemo("Parse error", e.message, "Warning")
+            self.__windows.append(attention)
+            attention.show()
+
 
 
     def pluginMain(self):
         self.__interface.add_notification('project-opened', self.showMenu)
-        self.__interface.transaction.autocommit = True
         self.__interface.set_main_loop(GtkMainLoop())
 
     def showMenu(self):
