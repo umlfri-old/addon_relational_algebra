@@ -93,6 +93,8 @@ class Relation:
         headers = []
         rows = []
         for column in columns:
+            if isinstance(column.ttype, type(Tokens.Wildcard)) and column.__str__() == "*":
+                raise CompileError("Projection does not make any sense here.", "Projection error")
             try:
                 index, header = self.get_column_index(column)
             except ValueError:
