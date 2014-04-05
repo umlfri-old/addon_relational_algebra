@@ -437,7 +437,7 @@ class Relation:
                 except IndexError:
                     pass
             if not common:
-                raise CompileError("Table don`t have common columns", "Natural join error")
+                return self.product(other)
         for condition in conditions:
             try:
                 left_operand = self.process_operand(condition.get_left_operand())
