@@ -88,7 +88,7 @@ class DRA:
                 a=Connection()
                 a.disconnect()
                 for window in self.__windows:
-                    if window.get_title()=="Connect to database" or isinstance(window,WaitingBar):
+                    if window.get_title() == "Connect to database" or isinstance(window, WaitingBar):
                         try:
                             window.hide_all()
                         except Exception:
