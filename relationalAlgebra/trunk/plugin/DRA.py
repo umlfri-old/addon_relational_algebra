@@ -57,6 +57,7 @@ class DRA:
     def parseSql(self):
         self.__diagram = list(self.__interface.project.root.diagrams)[0]
         self.__editorWindow.hide()
+        self.__graph = Graph()
         buffer = self.__sqlCommand.get_buffer()
         command = buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())
         try:
@@ -66,7 +67,7 @@ class DRA:
             try:
                 layout = self.__graph.layout_reingold_tilford(root=composite.get_position())
                 layout.rotate(angle=180)
-                layout.fit_into(bbox=BoundingBox(0, 0, 300, 300))
+                layout.fit_into(bbox=BoundingBox(0, 0, 300, 600))
                 with self.__interface.transaction:
                     composite.move(layout.coords)
             except Exception as a:

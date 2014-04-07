@@ -70,7 +70,7 @@ class Sql_parser:
             i = object.token_index(actual_object)
             table = object.token_next(i)
             #JOIN with SUBSELECT
-            if isinstance(table,Objects.Parenthesis):
+            if isinstance(table, Objects.Parenthesis):
                 i = object.token_index(table)
                 table = copy.deepcopy(table)
                 table.tokens.pop(0)
@@ -112,12 +112,11 @@ class Sql_parser:
                         join_condition = copy.deepcopy(type_join)
                         type_join = join_condition.token_first()
                         condition = join_condition.token_next(join_condition.token_index(type_join))
-
                     else:
                         i = object.token_index(type_join)
                         condition = object.token_next(i)
                         actual_object = condition
-                    subselect = table.token_first()
+                    subselect = table
                     if isinstance(subselect, Objects.Parenthesis):
                         subselect.tokens.pop(0)
                         subselect.tokens.pop(len(subselect.tokens)-1)
@@ -127,18 +126,18 @@ class Sql_parser:
                     alias_name = table.get_alias()
                 else:
                     actual_object = table
-                    table_name = table.token_first()
+                    table_name = table.token_first().__str__()
                     alias_name = table.token_next_by_instance(0, Objects.Identifier)
                     join_condition = table.token_next_by_instance(0, Objects.Function)
                     type_join = join_condition.token_first()
                     condition = join_condition.token_next(join_condition.token_index(type_join))
             if type_join.normalized in ("ON", "on"):
                 conditions = self.process_condition_join(condition)
-                actual_object = condition
+
             elif isinstance(type_join.ttype, type(Tokens.Keyword)) and type_join.normalized == "USING":
                 raise Exception("using is not supported")
 
-            joins.append(Join_object(table_name,alias_name , join_type, conditions))
+            joins.append(Join_object(table_name, alias_name, join_type, conditions))
             i = object.token_index(actual_object)
             actual_object = object.token_next(i)
         if actual_object is None or isinstance(actual_object.ttype,type(Tokens.Punctuation)):

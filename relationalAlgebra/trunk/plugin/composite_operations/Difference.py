@@ -11,7 +11,7 @@ class Difference:
         self.__name = "Difference"
         self.__element = None
         self.__data = None
-        self.__position = (0, 0)
+        self.__position = None
 
     def set(self, ancestor):
         if self.__ancestor_left is None:
@@ -19,15 +19,27 @@ class Difference:
         else:
             self.__ancestor_right = ancestor
 
-    def paint(self, interface, diagram):
+    def get_position(self):
+        return self.__position
+
+    def move(self, cords):
+        self.__ancestor_left.move(cords)
+        self.__ancestor_right.move(cords)
+        self.__element.move(cords[self.__position])
+
+    def paint(self, interface, diagram, graph):
         connection_left = interface.project.metamodel.connections["Relationship"]
         connection_right = interface.project.metamodel.connections["Relationship"]
-        ancestor_element_left = self.__ancestor_left.paint(interface, diagram)
-        ancestor_element_right = self.__ancestor_right.paint(interface, diagram)
+        ancestor_element_left, left_position = self.__ancestor_left.paint(interface, diagram, graph)
+        ancestor_element_right, right_position = self.__ancestor_right.paint(interface, diagram, graph)
         el = self.create_element(interface, diagram)
+        self.__position = len(graph.vs)
+        graph.add_vertex(self.__element.object.values['name'])
+        graph.add_edge(left_position, self.__position)
+        graph.add_edge(right_position, self.__position)
         ancestor_element_left.connect_with(el, connection_left)
         ancestor_element_right.connect_with(el, connection_right)
-        return el
+        return el, self.__position
 
     def create_element(self, interface, diagram):
         if self.__element is None:
