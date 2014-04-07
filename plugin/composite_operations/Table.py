@@ -1,6 +1,6 @@
 __author__ = 'Michal'
 
-from error import CompileError
+
 from relation import *
 
 
@@ -13,15 +13,24 @@ class Table:
         self.__element = None
         self.__connection = connection
         self.__data = None
+        self.__position = None
 
-    def paint(self, interface, diagram):
-        return self.create_element(interface, diagram)
+    def get_position(self):
+        return self.__position
+
+    def paint(self, interface, diagram, graph):
+        self.create_element(interface, diagram)
+        self.__position = len(graph.vs)
+        graph.add_vertex(self.__element.object.values['name'])
+        return self.__element, self.__position
+
+    def move(self, cords):
+        self.__element.move(cords[self.__position])
 
     def create_element(self, interface, diagram):
         if self.__element is None:
             element = interface.project.metamodel.elements[self.__name]
             el = diagram.create_element(element)
-            el.move((10, 10))
             el.object.values['table_name'] = self.__table
             self.__element = el
         return self.__element
@@ -35,7 +44,7 @@ class Table:
                     table_header.append(Header(h, [self.__table]))
                 relation = Relation(table_header)
             except CompileError as e:
-                raise CompileError(e.getValue(),e.getName())
+                raise CompileError(e.getValue(), e.getName())
             try:
                 data = self.__connection.getData(self.__table)
             except CompileError as e:

@@ -28,6 +28,7 @@ class Join:
         elif not left and not right:
             self.__name = "Inner join"
         self.__data = None
+        self.__position = (0, 0)
 
     def set(self, ancestor):
         if self.__ancestor_left is None:

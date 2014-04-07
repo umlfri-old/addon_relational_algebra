@@ -2,8 +2,6 @@ __author__ = 'Michal'
 
 
 import sqlparse
-
-from sqlparse import sql as Objects
 from error import CompileError
 
 
@@ -28,21 +26,31 @@ class Selection:
             self.__operation = "!="
         else:
             self.__operation = operation
-
         self.__ancestor = None
         self.__name = "Selection"
         self.__element = None
         self.__data = None
+        self.__position = None
+
+    def get_position(self):
+        return self.__position
 
     def set(self, ancestor):
         self.__ancestor = ancestor
 
-    def paint(self, interface, diagram):
+    def move(self, cords):
+        self.__ancestor.move(cords)
+        self.__element.move(cords[self.__position])
+
+    def paint(self, interface, diagram, graph):
         connection = interface.project.metamodel.connections["Relationship"]
-        ancestor_element = self.__ancestor.paint(interface, diagram)
+        ancestor_element, ancestor_position = self.__ancestor.paint(interface, diagram, graph)
         el = self.create_element(interface, diagram)
+        self.__position = len(graph.vs)
+        graph.add_vertex(self.__element.object.values['name'])
+        graph.add_edge(ancestor_position, self.__position)
         ancestor_element.connect_with(el, connection)
-        return el
+        return el, self.__position
 
     def create_element(self, interface, diagram):
         if self.__element is None:

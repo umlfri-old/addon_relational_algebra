@@ -8,12 +8,16 @@ from composite_operations import *
 from list import *
 from attention import *
 from sql_parser import Sql_parser
-
+try:
+    from igraph import *
+except ImportError:
+    print "ahoj"
 
 class DRA:
     def __init__(self,interface):
         self.__type = "ine"
         self.__windows = []
+        self.__graph = Graph()
         self.__interface = interface
         self.__menuConnect = None
         self.__editorWindow = None
@@ -58,13 +62,19 @@ class DRA:
         try:
             composite = self.__parser.parse(command)
             with self.__interface.transaction:
-                composite.paint(self.__interface, self.__diagram)
+                composite.paint(self.__interface, self.__diagram, self.__graph)
+            try:
+                layout = self.__graph.layout_reingold_tilford(root=composite.get_position())
+                layout.rotate(angle=180)
+                layout.fit_into(bbox=BoundingBox(0, 0, 300, 300))
+                with self.__interface.transaction:
+                    composite.move(layout.coords)
+            except Exception as a:
+                pass
         except Exception as e:
             attention = InfoBarDemo("Parse error", e.message, "Warning")
             self.__windows.append(attention)
             attention.show()
-
-
 
     def pluginMain(self):
         self.__interface.add_notification('project-opened', self.showMenu)
@@ -139,7 +149,6 @@ class DRA:
             self.__password.delete_text(0,len(self.__password.get_text()))
             self.__menuConnect.show_all()
 
-
     def oracle(self):
         type = self.__combobox.get_active()
         if type is 1:
@@ -152,7 +161,6 @@ class DRA:
             self.__sid.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#E6E6E6"))
             self.__database.set_editable(True)
             self.__database.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#FFFFFF"))
-
 
     def cancel(self):
         self.__menuConnect.hide()
@@ -200,18 +208,18 @@ class DRA:
                     m.enabled=False
 
     def disconnect(self):
-        a=Connection()
+        a = Connection()
         a.disconnect()
-        menu=self.__submenu.items
+        menu = self.__submenu.items
         for m in menu:
-            if m.gui_id=="connect":
-                m.visible=True
-                m.enabled=True
-            if m.gui_id=="disconnect":
-                m.visible=False
-            if m.gui_id=="execute":
-                m.enabled=False
-        self.__menuConnect=None
+            if m.gui_id == "connect":
+                m.visible = True
+                m.enabled = True
+            if m.gui_id == "disconnect":
+                m.visible = False
+            if m.gui_id == "execute":
+                m.enabled = False
+        self.__menuConnect = None
 
     def execute(self):
         self.__elements = {}
