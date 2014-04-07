@@ -526,7 +526,7 @@ class Relation:
     def rename(self, column, alias):
         if column is None:
             for header in self.__header:
-                header.rename(alias)
+                header.rename_table(alias)
         else:
             try:
                 index, header_name = self.get_column_index(column)
