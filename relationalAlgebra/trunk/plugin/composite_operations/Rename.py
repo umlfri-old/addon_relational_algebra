@@ -16,6 +16,7 @@ class Rename:
         self.__name = "Rename"
         self.__element = None
         self.__data = None
+        self.__position = (0, 0)
 
     def set(self,ancestor):
         self.__ancestor = ancestor

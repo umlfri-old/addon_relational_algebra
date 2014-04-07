@@ -11,6 +11,7 @@ class Intersection:
         self.__name = "Intersection"
         self.__element = None
         self.__data = None
+        self.__position = (0, 0)
 
     def set(self, ancestor):
         if self.__ancestor_left is None:
