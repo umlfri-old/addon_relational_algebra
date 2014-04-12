@@ -27,11 +27,11 @@ class Intersection:
         self.__ancestor_right.move(cords)
         self.__element.move(cords[self.__position])
 
-    def paint(self, interface, diagram, graph):
+    def paint(self, interface, diagram, graph, level):
         connection_left = interface.project.metamodel.connections["Relationship"]
         connection_right = interface.project.metamodel.connections["Relationship"]
-        ancestor_element_left, left_position = self.__ancestor_left.paint(interface, diagram, graph)
-        ancestor_element_right, right_position = self.__ancestor_right.paint(interface, diagram, graph)
+        ancestor_element_left, left_position, left_level = self.__ancestor_left.paint(interface, diagram, graph, level)
+        ancestor_element_right, right_position, right_level = self.__ancestor_right.paint(interface, diagram, graph, level)
         el = self.create_element(interface, diagram)
         self.__position = len(graph.vs)
         graph.add_vertex(self.__element.object.values['name'])
@@ -39,7 +39,9 @@ class Intersection:
         graph.add_edge(right_position, self.__position)
         ancestor_element_left.connect_with(el, connection_left)
         ancestor_element_right.connect_with(el, connection_right)
-        return el, self.__position
+        level = max(left_level, right_level)
+        level += 1
+        return el, self.__position, level
 
     def create_element(self, interface, diagram):
         if self.__element is None:

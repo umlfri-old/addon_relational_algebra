@@ -42,15 +42,16 @@ class Selection:
         self.__ancestor.move(cords)
         self.__element.move(cords[self.__position])
 
-    def paint(self, interface, diagram, graph):
+    def paint(self, interface, diagram, graph, level):
         connection = interface.project.metamodel.connections["Relationship"]
-        ancestor_element, ancestor_position = self.__ancestor.paint(interface, diagram, graph)
+        ancestor_element, ancestor_position, ancestor_level = self.__ancestor.paint(interface, diagram, graph, level)
         el = self.create_element(interface, diagram)
         self.__position = len(graph.vs)
-        graph.add_vertex(self.__element.object.values['name'])
+        graph.add_vertex(self.__element.object.values['name'], **{"size": 100})
         graph.add_edge(ancestor_position, self.__position)
         ancestor_element.connect_with(el, connection)
-        return el, self.__position
+        level = ancestor_level + 1
+        return el, self.__position, level
 
     def create_element(self, interface, diagram):
         if self.__element is None:

@@ -42,10 +42,8 @@ class Sql_parser:
                 group.append(old_conditions[i])
                 if isinstance(old_conditions[i + 1], list):
                     group.append(self.group_condition(old_conditions[i + 1]))
-
                 else:
                     group.append(old_conditions[i + 1])
-
             else:
                 conditions.append(group)
                 conditions.append(old_conditions[i])
@@ -531,5 +529,7 @@ class Sql_parser:
 
     def parse(self, command):
         parsed = sqlparse.parse(sqlparse.format(command, reindent=True, keyword_case="upper"))
+        if len(parsed) > 1:
+            raise CompileError("You can parse only one SQL query at a time", "Parse error")
         select = self.parse_select(parsed[0])
         return self.process_select(select)
