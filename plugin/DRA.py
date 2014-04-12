@@ -63,17 +63,21 @@ class DRA:
         try:
             composite = self.__parser.parse(command)
             with self.__interface.transaction:
-                composite.paint(self.__interface, self.__diagram, self.__graph)
+                el, pos, level = composite.paint(self.__interface, self.__diagram, self.__graph, 0)
             try:
                 layout = self.__graph.layout_reingold_tilford(root=composite.get_position())
                 layout.rotate(angle=180)
-                layout.fit_into(bbox=BoundingBox(0, 0, 300, 600))
+                layout.fit_into(bbox=BoundingBox(0, 0, 300, level * 80))
                 with self.__interface.transaction:
                     composite.move(layout.coords)
-            except Exception as a:
+            except Exception:
                 pass
-        except Exception as e:
+        except CompileError as e:
             attention = InfoBarDemo("Parse error", e.message, "Warning")
+            self.__windows.append(attention)
+            attention.show()
+        except Exception:
+            attention = InfoBarDemo("Parse error", "SQL syntax error", "Warning")
             self.__windows.append(attention)
             attention.show()
 
@@ -83,20 +87,20 @@ class DRA:
 
     def showMenu(self):
         if self.__interface.project.metamodel.uri == "urn:umlfri.org:metamodel:DRAmodel":
-            self.__type="DRA"
-            menu=self.__submenu.items
+            self.__type = "DRA"
+            menu = self.__submenu.items
             for m in menu:
-                if m.gui_id=="disconnect":
-                    m.visible=False
-                if m.gui_id=="execute":
-                    m.enabled=False
-                if m.gui_id=="connect":
-                    m.visible=True
-                    m.enabled=True
+                if m.gui_id == "disconnect":
+                    m.visible = False
+                if m.gui_id == "execute":
+                    m.enabled = False
+                if m.gui_id == "connect":
+                    m.visible = True
+                    m.enabled = True
             self.__menu.visible = True
         else:
             if self.__type is "DRA":
-                a=Connection()
+                a = Connection()
                 a.disconnect()
                 for window in self.__windows:
                     if window.get_title() == "Connect to database" or isinstance(window, WaitingBar):

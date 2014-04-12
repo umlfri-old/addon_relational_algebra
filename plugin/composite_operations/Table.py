@@ -18,11 +18,12 @@ class Table:
     def get_position(self):
         return self.__position
 
-    def paint(self, interface, diagram, graph):
+    def paint(self, interface, diagram, graph, level):
         self.create_element(interface, diagram)
         self.__position = len(graph.vs)
-        graph.add_vertex(self.__element.object.values['name'])
-        return self.__element, self.__position
+        graph.add_vertex(self.__element.object.values['name'], **{"size": 100})
+        level += 1
+        return self.__element, self.__position, level
 
     def move(self, cords):
         self.__element.move(cords[self.__position])
