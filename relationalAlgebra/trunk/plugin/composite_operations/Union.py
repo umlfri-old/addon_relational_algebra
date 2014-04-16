@@ -30,7 +30,7 @@ class Union:
         ancestor_element_right, right_position, right_level = self.__ancestor_right.paint(interface, diagram, graph, level)
         el = self.create_element(interface, diagram)
         self.__position = len(graph.vs)
-        graph.add_vertex(self.__element.object.values['name'], **{"size": 100})
+        graph.add_vertex(self.__element.object.values['name'])
         graph.add_edge(left_position, self.__position)
         graph.add_edge(right_position, self.__position)
         ancestor_element_left.connect_with(el, connection_left)
