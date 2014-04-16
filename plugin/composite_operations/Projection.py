@@ -36,7 +36,7 @@ class Projection:
         ancestor_element, position, ancestor_level = self.__ancestor.paint(interface, diagram, graph, level)
         el = self.create_element(interface, diagram)
         self.__position = len(graph.vs)
-        graph.add_vertex(self.__element.object.values['name'], **{"size": 100})
+        graph.add_vertex(self.__element.object.values['name'])
         graph.add_edge(position, self.__position)
         ancestor_element.connect_with(el, connection)
         level = ancestor_level + 1

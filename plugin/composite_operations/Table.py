@@ -21,7 +21,7 @@ class Table:
     def paint(self, interface, diagram, graph, level):
         self.create_element(interface, diagram)
         self.__position = len(graph.vs)
-        graph.add_vertex(self.__element.object.values['name'], **{"size": 100})
+        graph.add_vertex(self.__element.object.values['name'])
         level += 1
         return self.__element, self.__position, level
 

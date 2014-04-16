@@ -107,6 +107,7 @@ class Relation:
             rows.append([data[i] for i in indexes])
         self.__header = headers
         self.__rows = rows
+        self.create_unique()
         return self
 
     def difference(self, other):
