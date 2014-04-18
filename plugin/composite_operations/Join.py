@@ -68,13 +68,14 @@ class Join:
             element = interface.project.metamodel.elements[self.__name]
             el = diagram.create_element(element)
             conditions = []
-            for condition in self.__condition:
-                c = {}
-                c['column1'] = condition.get_left_operand().__str__()
-                c['condition'] = condition.get_operator().__str__()
-                c['column2'] = condition.get_right_operand().__str__()
-                conditions.append(c)
-            el.object.values['cond'] = conditions
+            if self.__condition is not None:
+                for condition in self.__condition:
+                    c = {}
+                    c['column1'] = condition.get_left_operand().__str__()
+                    c['condition'] = condition.get_operator().__str__()
+                    c['column2'] = condition.get_right_operand().__str__()
+                    conditions.append(c)
+                el.object.values['cond'] = conditions
             self.__element = el
         return self.__element
 
