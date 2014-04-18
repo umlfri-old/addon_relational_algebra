@@ -111,9 +111,12 @@ class Sql_parser:
                         type_join = join_condition.token_first()
                         condition = join_condition.token_next(join_condition.token_index(type_join))
                     else:
-                        i = object.token_index(type_join)
-                        condition = object.token_next(i)
-                        actual_object = condition
+                        if type_join is None and join_type == "NATURAL JOIN":
+                           actual_object = table
+                        else:
+                            i = object.token_index(type_join)
+                            condition = object.token_next(i)
+                            actual_object = condition
                     subselect = table
                     if isinstance(subselect, Objects.Parenthesis):
                         subselect.tokens.pop(0)
@@ -129,10 +132,10 @@ class Sql_parser:
                     join_condition = table.token_next_by_instance(0, Objects.Function)
                     type_join = join_condition.token_first()
                     condition = join_condition.token_next(join_condition.token_index(type_join))
-            if type_join.normalized in ("ON", "on"):
+            if type_join is not None and type_join.normalized in ("ON", "on"):
                 conditions = self.process_condition_join(condition)
 
-            elif isinstance(type_join.ttype, type(Tokens.Keyword)) and type_join.normalized == "USING":
+            elif type_join is not None and isinstance(type_join.ttype, type(Tokens.Keyword)) and type_join.normalized == "USING":
                 raise Exception("using is not supported")
 
             joins.append(Join_object(table_name, alias_name, join_type, conditions))
