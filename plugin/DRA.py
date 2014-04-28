@@ -11,7 +11,8 @@ from sql_parser import Sql_parser
 try:
     from igraph import *
 except ImportError:
-    print "ahoj"
+    pass
+
 
 class DRA:
     def __init__(self,interface):

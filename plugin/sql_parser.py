@@ -285,24 +285,7 @@ class Sql_parser:
                 if y == 0:
                     tables.append(self.process_table(identifier, True))
                 else:
-                    if isinstance(identifier, Objects.Parenthesis):
-                        table = copy.deepcopy(identifier)
-                        table.tokens.pop(0)
-                        table.tokens.pop(len(table.tokens) - 1)
-                        i = object.token_index(actual_object)
-                        actual_object = object.token_next(i)
-                        if isinstance(actual_object, Objects.Identifier):
-                            tables.append(Table_object(self.parse_select(table), actual_object.normalized, "KART"))
-                        elif isinstance(actual_object, Objects.IdentifierList):
-                            for y, identifier in enumerate(actual_object.get_identifiers()):
-                                if y == 0:
-                                    tables.append(Table_object(self.parse_select(table), actual_object.normalized, "KART"))
-                                else:
-                                    tables.append(self.process_table(identifier))
-                        else:
-                            tables.append(Table_object(self.parse_select(table), None, "KART"))
-                    else:
-                        tables.append(self.process_table(identifier))
+                    tables.append(self.process_table(identifier))
         elif isinstance(actual_object, Objects.Parenthesis):
             table = copy.deepcopy(actual_object)
             table.tokens.pop(0)
@@ -369,23 +352,23 @@ class Sql_parser:
             else:
                 return Table_object(table.get_real_name(), table.get_alias(), "KART")
 
-    def process_select(self, select):
+    def process_select(self, select, tables):
         composite = None
         #process table
-        tables = []
         if select.get_tables() is not None:
             for table in select.get_tables():
-                if table.get_alias_name() is not None and table.get_alias_name() != "":
-                    tables.append(table.get_alias_name().__str__() + ".*")
-                else:
-                    tables.append(table.get_table_name().__str__() + ".*")
+                if not isinstance(table.get_table_name(), Select):
+                    if table.get_alias_name() is not None and table.get_alias_name() != "":
+                        tables.append(table.get_alias_name().__str__() + ".*")
+                    else:
+                        tables.append(table.get_table_name().__str__() + ".*")
 
                 if table.get_table_type() == "FIRST":
-                    composite = self.process_ancestor(table)
+                    composite = self.process_ancestor(table, tables)
                 else:
                     product = Product()
                     product.set(composite)
-                    product.set(self.process_ancestor(table))
+                    product.set(self.process_ancestor(table, tables))
                     composite = product
         #process joins
         if select.get_joins() is not None:
@@ -407,7 +390,7 @@ class Sql_parser:
                     join_com = Join(True, True)
 
                 join_com.set(composite)
-                join_com.set(self.process_ancestor(join))
+                join_com.set(self.process_ancestor(join, tables))
                 join_com.set_condition(join.get_conditions())
                 composite = join_com
 
@@ -485,20 +468,23 @@ class Sql_parser:
             if operand.get_operator() == "EXISTS":
                 product = Product()
                 product.set(composite)
-                product.set(self.process_select(operand.get_left_operand()))
+                product.set(self.process_select(operand.get_left_operand(), []))
                 if operand.get_right_operand() is not None or len(operand.get_right_operand()) != 0:
                     selection = self.process_conditions(operand.get_right_operand(), product, tables)
                     exists = selection
                 else:
                     exists = product
 
-                projection = Projection(tables, True)
-                projection.set(exists)
-                return projection
+                if not isinstance(exists, Projection):
+                    projection = Projection(tables, True)
+                    projection.set(exists)
+                    return projection
+                else:
+                    return exists
             elif operand.get_operator() == "NOT EXISTS":
                 product = Product()
                 product.set(composite)
-                product.set(self.process_select(operand.get_left_operand()))
+                product.set(self.process_select(operand.get_left_operand(), []))
 
                 if operand.get_right_operand() is not None or len(operand.get_right_operand()) != 0:
                     selection = self.process_conditions(operand.get_right_operand(), product, tables)
@@ -517,10 +503,10 @@ class Sql_parser:
             selection.set(composite)
             return selection
 
-    def process_ancestor(self, ancestor):
+    def process_ancestor(self, ancestor, tables):
         if isinstance(ancestor, Table_object) or isinstance(ancestor, Join_object):
             if isinstance(ancestor.get_table_name(), Select):
-                tab = self.process_select(ancestor.get_table_name())
+                tab = self.process_select(ancestor.get_table_name(), tables)
             else:
                 tab = Table(ancestor.get_table_name())
             if ancestor.get_alias_name() is not None:
@@ -535,4 +521,5 @@ class Sql_parser:
         if len(parsed) > 1:
             raise CompileError("You can parse only one SQL query at a time", "Parse error")
         select = self.parse_select(parsed[0])
-        return self.process_select(select)
+        tables = []
+        return self.process_select(select, tables)
