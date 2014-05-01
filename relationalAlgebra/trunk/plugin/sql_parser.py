@@ -278,6 +278,8 @@ class Sql_parser:
             i = object.token_index(actual_object)
             actual_object = object.token_next(i)
         tables = []
+        if isinstance(actual_object.ttype, type(Tokens.Keyword)):
+            raise CompileError("Illegal keyword in list of tables", "Parse error")
         if isinstance(actual_object, Objects.Identifier):
             tables.append(self.process_table(actual_object, True))
         elif isinstance(actual_object,Objects.IdentifierList):
@@ -307,6 +309,8 @@ class Sql_parser:
     def get_columns(self, object, i):
         actual_object = object.token_next(i)
         columns = []
+        if isinstance(actual_object.ttype, type(Tokens.Keyword)) and not isinstance(actual_object.ttype, type(Tokens.Wildcard)):
+            raise CompileError("Illegal keyword in list of columns", "Parse error")
         if isinstance(actual_object, Objects.Identifier):
             columns.append(self.process_column(actual_object))
         elif isinstance(actual_object, Objects.IdentifierList):
@@ -348,9 +352,9 @@ class Sql_parser:
                 return Table_object(self.parse_select(table_name), alias, "KART")
         else:
             if first:
-                return Table_object(table.get_real_name(), table.get_alias(), "FIRST")
+                return Table_object(table.get_real_name(code=True), table.get_alias(), "FIRST")
             else:
-                return Table_object(table.get_real_name(), table.get_alias(), "KART")
+                return Table_object(table.get_real_name(code=True), table.get_alias(), "KART")
 
     def process_select(self, select, tables):
         composite = None

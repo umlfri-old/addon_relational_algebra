@@ -75,13 +75,13 @@ class DRA:
             except Exception:
                 pass
         except CompileError as e:
-            attention = InfoBarDemo("Parse error", e.message, "Warning")
+            attention = InfoBarDemo(e.getName(), e.getValue(), "Warning")
             self.__windows.append(attention)
             attention.show()
-        #except Exception:
-            #attention = InfoBarDemo("Parse error", "SQL syntax error", "Warning")
-            #self.__windows.append(attention)
-            #attention.show()
+        except Exception:
+            attention = InfoBarDemo("Parse error", "SQL syntax error", "Warning")
+            self.__windows.append(attention)
+            attention.show()
 
     def pluginMain(self):
         self.__interface.add_notification('project-opened', self.showMenu)
