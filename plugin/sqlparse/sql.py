@@ -404,7 +404,7 @@ class TokenList(Token):
                 return None
             alias = next_
         if isinstance(alias, Identifier):
-            return alias.get_name()
+            return self._remove_quotes(alias.get_name())
         return unicode(alias)
 
     def get_name(self):
