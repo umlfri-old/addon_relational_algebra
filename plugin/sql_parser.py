@@ -61,7 +61,7 @@ class Sql_parser:
         conditions = None
         actual_object = object.token_next(i)
         joins = []
-        while actual_object is not None and isinstance(actual_object.ttype,type(Tokens.Keyword)) \
+        while actual_object is not None and isinstance(actual_object.ttype, type(Tokens.Keyword)) \
                 and (actual_object.normalized in("LEFT JOIN", "RIGHT JOIN", "JOIN", "INNER JOIN", "NATURAL JOIN",
                 "LEFT OUTER JOIN", "RIGHT OUTER JOIN", "FULL OUTER JOIN")):
             join_type = actual_object.normalized
@@ -134,8 +134,7 @@ class Sql_parser:
                     condition = join_condition.token_next(join_condition.token_index(type_join))
             if type_join is not None and type_join.normalized in ("ON", "on"):
                 conditions = self.process_condition_join(condition)
-
-            elif type_join is not None and isinstance(type_join.ttype, type(Tokens.Keyword)) and type_join.normalized == "USING":
+            elif type_join is not None and type_join.normalized in ("USING", "using"):
                 raise Exception("using is not supported")
 
             joins.append(Join_object(table_name, alias_name, join_type, conditions))

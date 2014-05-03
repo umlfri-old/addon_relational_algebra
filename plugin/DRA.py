@@ -78,8 +78,8 @@ class DRA:
             attention = InfoBarDemo(e.getName(), e.getValue(), "Warning")
             self.__windows.append(attention)
             attention.show()
-        except Exception:
-            attention = InfoBarDemo("Parse error", "SQL syntax error", "Warning")
+        except Exception as e:
+            attention = InfoBarDemo("Parse error", e.message, "Warning")
             self.__windows.append(attention)
             attention.show()
 
