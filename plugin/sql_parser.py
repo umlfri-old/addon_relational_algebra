@@ -140,11 +140,12 @@ class Sql_parser:
             joins.append(Join_object(table_name, alias_name, join_type, conditions))
             i = object.token_index(actual_object)
             actual_object = object.token_next(i)
-        if actual_object is None or isinstance(actual_object.ttype,type(Tokens.Punctuation)):
+        if actual_object is None or actual_object.__str__() == ";":
             return joins, i
-        next_object = actual_object.token_next(-1)
-        if isinstance(next_object.ttype, type(Tokens.Keyword)) and next_object.normalized == "WHERE":
+        if actual_object is not None and isinstance(actual_object, Objects.Where):
             return joins, i
+        if actual_object is not None:
+            raise Exception("Illegal word in SQL query")
         return joins, object.token_index(actual_object)
 
     def get_condition(self, object, i):
