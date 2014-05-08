@@ -223,7 +223,6 @@ class Relation:
                 left_value = left_operand["value"]
             else:
                 self.__left_value['type'] = "others"
-                self.__left_value["value"] = left_operand["value"]
                 left_value = left_operand['value']
 
             if right_operand["type"] == "column":
@@ -235,7 +234,6 @@ class Relation:
                 right_value = right_operand["value"]
             else:
                 self.__right_value['type'] = "others"
-                self.__right_value["value"] = right_operand["value"]
                 right_value = right_operand['value']
         else:
             if left_operand["type"] == "column":
@@ -285,6 +283,7 @@ class Relation:
                 for value in right_value:
                     if isinstance(left_value, str):
                         try:
+                            value.strip()
                             values.append(self.remove_quotes(value))
                         except ValueError:
                             raise CompileError("Wrong string format, must be in quotations ''", "Selection error")
@@ -532,6 +531,8 @@ class Relation:
                     del self.__header[indexes[1]]
                     for rows in self.__rows:
                         del rows[indexes[1]]
+        self.__right_value = {}
+        self.__left_value = {}
         return self
 
     def rename(self, column, alias):

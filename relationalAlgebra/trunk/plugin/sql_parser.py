@@ -170,7 +170,24 @@ class Sql_parser:
             #NOT IN condition
             elif isinstance(actual_object, Objects.Identifier):
                 next = condition_statement.token_next(condition_statement.token_index(actual_object)+1)
-                if isinstance(next, Objects.Token) and next.normalized == "BETWEEN":
+                if next is None:
+                    function = actual_object.token_next_by_instance(0, (Objects.Function, Objects.Parenthesis))
+                    operator = actual_object.token_first()
+                    function_statement = function.token_next_by_instance(0, Objects.Parenthesis)
+                    operation = function.token_first().__str__().upper()
+                    if isinstance(function_statement, Objects.Parenthesis) and isinstance(function_statement.token_next(0), Objects.IdentifierList):
+                        if operation == "NOT":
+                            conditions.append(Condition(operator, "NOT IN", function_statement.normalized))
+                        else:
+                            conditions.append(Condition(operator, "IN", function_statement.normalized))
+                    elif isinstance(function_statement, Objects.Parenthesis) and isinstance(function_statement.token_next(0).ttype, type(Tokens.DML)):
+                        function_statement.tokens.pop(0)
+                        function_statement.tokens.pop(len(function_statement.tokens)-1)
+                        if next is not None and next.normalized == "NOT":
+                            conditions.append(Condition(operator, "NOT IN", self.parse_select(function_statement)))
+                        else:
+                            conditions.append(Condition(operator, "IN", self.parse_select(function_statement)))
+                elif isinstance(next, Objects.Token) and next.normalized == "BETWEEN":
                     operand = condition_statement.token_next(condition_statement.token_index(next))
                     conditions.append(Condition(actual_object, ">=", operand))
                     operation = condition_statement.token_next(condition_statement.token_index(operand))
@@ -401,7 +418,10 @@ class Sql_parser:
         #process conditions
         composite = self.process_conditions(select.get_conditions(), composite, tables)
 
-        columns = [item for item in select.get_columns() if not item.is_constant()]
+        if select.get_columns() is not None:
+            columns = [item for item in select.get_columns() if not item.is_constant()]
+        else:
+            columns = []
         #process columns
         if columns is not None and len(columns) != 0:
             projection = Projection(columns, True)

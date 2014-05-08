@@ -67,9 +67,15 @@ class Join_object:
 
 class Condition:
     def __init__(self, left_operand, operator, right_operand):
-        self.__left_operand = left_operand
+        if isinstance(left_operand, unicode) or isinstance(left_operand, str):
+            self.__left_operand = "".join(left_operand.split())
+        else:
+            self.__left_operand = left_operand
         self.__operator = operator
-        self.__right_operand = right_operand
+        if isinstance(right_operand, unicode) or isinstance(right_operand, str):
+            self.__right_operand = "".join(right_operand.split())
+        else:
+            self.__right_operand = right_operand
 #
     def get_left_operand(self):
         return self.__left_operand
