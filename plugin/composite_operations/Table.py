@@ -15,16 +15,21 @@ class Table:
         self.__connection = connection
         self.__data = None
         self.__position = None
+        self.__level = 0
 
     def get_position(self):
         return self.__position
 
     def paint(self, interface, diagram, graph, level):
-        self.create_element(interface, diagram)
-        self.__position = len(graph.vs)
-        graph.add_vertex(self.__element.object.values['name'])
-        level += 1
-        return self.__element, self.__position, level
+        if self.__element is None:
+            self.create_element(interface, diagram)
+            self.__position = len(graph.vs)
+            graph.add_vertex(self.__element.object.values['name'])
+            level += 1
+            self.__level = level
+            return self.__element, self.__position, level
+        else:
+            return self.__element, self.__position, self.__level
 
     def move(self, cords):
         self.__element.move(cords[self.__position])
@@ -59,7 +64,7 @@ class Table:
                 relation.addRow(new)
             relation.create_unique()
             self.__data = relation
-            return copy.copy(self.__data)
+            return copy.deepcopy(self.__data)
         else:
-            return copy.copy(self.__data)
+            return copy.deepcopy(self.__data)
 

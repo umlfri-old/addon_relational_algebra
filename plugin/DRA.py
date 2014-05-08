@@ -69,7 +69,7 @@ class DRA:
                 layout = self.__graph.layout_reingold_tilford(root=composite.get_position())
                 layout.rotate(angle=180)
                 layout.mirror(0)
-                layout.fit_into(bbox=BoundingBox(0, 0, 300, level * 80))
+                layout.fit_into(bbox=BoundingBox(0, 0, 400, level * 100))
                 with self.__interface.transaction:
                     composite.move(layout.coords)
             except Exception:
@@ -78,10 +78,10 @@ class DRA:
             attention = InfoBarDemo(e.getName(), e.getValue(), "Warning")
             self.__windows.append(attention)
             attention.show()
-        except Exception as e:
-            attention = InfoBarDemo("Parse error", e.message, "Warning")
-            self.__windows.append(attention)
-            attention.show()
+        #except Exception as e:
+        #    attention = InfoBarDemo("Parse error", e.message, "Warning")
+        #    self.__windows.append(attention)
+        #    attention.show()
 
     def pluginMain(self):
         self.__interface.add_notification('project-opened', self.showMenu)

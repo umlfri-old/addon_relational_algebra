@@ -19,6 +19,7 @@ class Rename:
         self.__element = None
         self.__data = None
         self.__position = None
+        self.__level = 0
 
     def set(self,ancestor):
         self.__ancestor = ancestor
@@ -31,15 +32,19 @@ class Rename:
         self.__element.move(cords[self.__position])
 
     def paint(self, interface, diagram, graph, level):
-        connection = interface.project.metamodel.connections["Relationship"]
-        ancestor_element, position, ancestor_level = self.__ancestor.paint(interface, diagram, graph, level)
-        el = self.create_element(interface, diagram)
-        self.__position = len(graph.vs)
-        graph.add_vertex(self.__element.object.values['name'])
-        graph.add_edge(position, self.__position)
-        ancestor_element.connect_with(el, connection)
-        level = ancestor_level + 1
-        return el, self.__position, level
+        if self.__element is None:
+            connection = interface.project.metamodel.connections["Relationship"]
+            ancestor_element, position, ancestor_level = self.__ancestor.paint(interface, diagram, graph, level)
+            el = self.create_element(interface, diagram)
+            self.__position = len(graph.vs)
+            graph.add_vertex(self.__element.object.values['name'])
+            graph.add_edge(position, self.__position)
+            ancestor_element.connect_with(el, connection)
+            level = ancestor_level + 1
+            self.__level = level
+            return el, self.__position, level
+        else:
+            return self.__element, self.__position, self.__level
 
     def create_element(self, interface, diagram):
         if self.__element is None:
@@ -56,7 +61,7 @@ class Rename:
             relation = self.__ancestor.execute()
             relation.rename(self.__column, self.__alias)
             self.__data = relation
-            return copy.copy(self.__data)
+            return copy.deepcopy(self.__data)
         else:
-            return copy.copy(self.__data)
+            return copy.deepcopy(self.__data)
 
