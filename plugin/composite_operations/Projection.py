@@ -60,6 +60,6 @@ class Projection:
             relation = self.__ancestor.execute()
             relation.projection(self.__columns)
             self.__data = relation
-            return self.__data
+            return copy.copy(self.__data)
         else:
-            return self.__data
+            return copy.copy(self.__data)

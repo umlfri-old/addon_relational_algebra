@@ -3,7 +3,7 @@ __author__ = 'Michal'
 
 import sqlparse
 from error import CompileError
-
+import copy
 
 class Selection:
     def __init__(self, left_operand, operation, right_operand, diagram=True):
@@ -68,6 +68,6 @@ class Selection:
             left_data = self.__ancestor.execute()
             left_data.selection(self.__left_operand, self.__operation, self.__right_operand)
             self.__data = left_data
-            return self.__data
+            return copy.copy(self.__data)
         else:
-            return self.__data
+            return copy.copy(self.__data)

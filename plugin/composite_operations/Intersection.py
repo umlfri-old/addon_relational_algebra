@@ -2,7 +2,7 @@ __author__ = 'Michal'
 
 from relation import Relation
 from error import CompileError
-
+import copy
 
 class Intersection:
     def __init__(self):
@@ -56,6 +56,6 @@ class Intersection:
             right_data = self.__ancestor_right.execute()
             left_data.intersection(right_data)
             self.__data = left_data
-            return self.__data
+            return copy.copy(self.__data)
         else:
-            return self.__data
+            return copy.copy(self.__data)

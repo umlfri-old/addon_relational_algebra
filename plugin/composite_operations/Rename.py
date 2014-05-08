@@ -3,6 +3,8 @@ __author__ = 'Michal'
 from relation import Relation
 from error import CompileError
 import sqlparse
+import copy
+
 
 class Rename:
     def __init__(self, alias, column=None, ancestor=None):
@@ -54,7 +56,7 @@ class Rename:
             relation = self.__ancestor.execute()
             relation.rename(self.__column, self.__alias)
             self.__data = relation
-            return self.__data
+            return copy.copy(self.__data)
         else:
-            return self.__data
+            return copy.copy(self.__data)
 

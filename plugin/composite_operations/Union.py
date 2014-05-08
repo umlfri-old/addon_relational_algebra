@@ -1,5 +1,8 @@
 __author__ = 'Michal'
 
+import copy
+
+
 class Union:
     def __init__(self):
         self.__ancestor_left = None
@@ -52,6 +55,6 @@ class Union:
             right_data = self.__ancestor_right.execute()
             left_data.union(right_data)
             self.__data = left_data
-            return self.__data
+            return copy.copy(self.__data)
         else:
-            return self.__data
+            return copy.copy(self.__data)
