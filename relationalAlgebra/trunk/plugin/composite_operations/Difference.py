@@ -1,5 +1,6 @@
 __author__ = 'Michal'
 
+import copy
 
 class Difference:
     def __init__(self):
@@ -53,6 +54,6 @@ class Difference:
             right_data = self.__ancestor_right.execute()
             left_data.difference(right_data)
             self.__data = left_data
-            return self.__data
+            return copy.copy(self.__data)
         else:
-            return self.__data
+            return copy.copy(self.__data)

@@ -2,6 +2,7 @@ __author__ = 'Michal'
 
 
 from relation import *
+import copy
 
 
 class Table:
@@ -57,7 +58,8 @@ class Table:
                     new.append(data[i][y])
                 relation.addRow(new)
             relation.create_unique()
-            return relation
+            self.__data = relation
+            return copy.copy(self.__data)
         else:
-            return self.__data
+            return copy.copy(self.__data)
 

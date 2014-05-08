@@ -3,6 +3,7 @@ __author__ = 'Michal'
 from objects import Condition
 import ast
 import sqlparse
+import copy
 
 class Join:
     def __init__(self, left=False, right=False, condition=None):
@@ -38,6 +39,7 @@ class Join:
 
     def get_position(self):
         return self.__position
+
 
     def move(self, cords):
         self.__ancestor_left.move(cords)
@@ -85,6 +87,6 @@ class Join:
             right_data = self.__ancestor_right.execute()
             left_data.join(right_data, self.__condition, self.__left, self.__right)
             self.__data = left_data
-            return self.__data
+            return copy.copy(self.__data)
         else:
-            return self.__data
+            return copy.copy(self.__data)

@@ -219,14 +219,24 @@ class Relation:
                 left_value = row[left_operand["value"]]
             elif not "value" in self.__left_value:
                 self.__left_value["type"] = "others"
+                self.__left_value["value"] = left_operand["value"]
                 left_value = left_operand["value"]
+            else:
+                self.__left_value['type'] = "others"
+                self.__left_value["value"] = left_operand["value"]
+                left_value = left_operand['value']
 
             if right_operand["type"] == "column":
                 self.__right_value["type"] = "column"
                 right_value = row[right_operand["value"]]
             elif not "value" in self.__right_value:
                 self.__right_value["type"] = "others"
+                self.__right_value["value"] = right_operand["value"]
                 right_value = right_operand["value"]
+            else:
+                self.__right_value['type'] = "others"
+                self.__right_value["value"] = right_operand["value"]
+                right_value = right_operand['value']
         else:
             if left_operand["type"] == "column":
                 if left_operand["relation"] == "first":

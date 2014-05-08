@@ -7,6 +7,7 @@ import copy
 from error import CompileError
 from relation import Relation
 
+
 class Division:
     def __init__(self):
         self.__ancestor_left = None
@@ -66,8 +67,8 @@ class Division:
             except CompileError:
                 raise CompileError("Division error", "Division error")
             self.__data = left_data
-            return self.__data
+            return copy.copy(self.__data)
         else:
-            return self.__data
+            return copy.copy(self.__data)
 
 

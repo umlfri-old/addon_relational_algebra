@@ -2,6 +2,8 @@ __author__ = 'Michal'
 
 from error import CompileError
 from relation import Relation
+import copy
+
 
 class Product:
     def __init__(self):
@@ -55,6 +57,6 @@ class Product:
             right_data = self.__ancestor_right.execute()
             left_data.product(right_data)
             self.__data = left_data
-            return self.__data
+            return copy.copy(self.__data)
         else:
-            return self.__data
+            return copy.copy(self.__data)
